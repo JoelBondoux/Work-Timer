@@ -19,7 +19,7 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 ### 1. Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Work-Timer.git
+git clone https://github.com/JoelBondoux/Work-Timer.git
 cd Work-Timer
 npm install
 npm run build

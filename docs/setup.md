@@ -13,7 +13,7 @@ Complete instructions for installing and configuring Work-Timer.
 ### From Source (Recommended)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Work-Timer.git
+git clone https://github.com/JoelBondoux/Work-Timer.git
 cd Work-Timer
 npm install
 npm run build
