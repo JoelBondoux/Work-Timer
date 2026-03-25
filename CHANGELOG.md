@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-25
+
+### Added
+
+- Accounting software export presets: `--preset quickbooks`, `xero`, `freshbooks`, `sage`, `myob`
+- Each preset maps billing data to the exact CSV column names and date formats required by the target package
+- Configurable preset options: `--account-code`, `--tax-type`, `--payment-terms` for package-specific fields
+- New MCP tool `export_preset` for natural language accounting exports (e.g. "Export my March billing for QuickBooks")
+- Setup instructions for ChatGPT Desktop and GitHub Copilot (VS Code) MCP configuration
+- Windows troubleshooting: npm global PATH, PowerShell execution policy, Turso install via web dashboard
+- PowerShell quick-setup script for Claude Desktop config file creation
+
+### Changed
+
+- Turso setup instructions now recommend the web dashboard for Windows users (no WSL/scoop required)
+- Claude Desktop config no longer includes auth tokens (credentials read from `~/.work-timer/config.json`)
+- Setup guide uses PowerShell-compatible syntax for Windows paths
+
 ## [1.0.0] - 2026-03-25
 
 ### Added
