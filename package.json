@@ -1,0 +1,41 @@
+{
+  "name": "work-timer",
+  "version": "1.0.0",
+  "description": "A zero-cost, local-first work timer and billing tool for solo contractors. Control via natural language through any MCP-compatible LLM client or CLI.",
+  "type": "module",
+  "main": "./dist/mcp/server.js",
+  "bin": {
+    "work-timer": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start:mcp": "node dist/mcp/server.js",
+    "start:cli": "node dist/cli/index.js",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "timer",
+    "billing",
+    "contractor",
+    "freelance",
+    "mcp",
+    "time-tracking",
+    "invoicing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "commander": "^14.0.0",
+    "exceljs": "^4.4.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
