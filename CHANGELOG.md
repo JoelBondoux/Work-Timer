@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-03-25
+
+### Added
+
+- Spreadsheet formula-injection protection for CSV/XLSX exports and accounting preset exports
+- MCP-safe export path resolver that confines file writes to `~/.work-timer/exports`
+- Hidden token entry during `work-timer setup`
+- New security regression tests for spreadsheet sanitization, safe export path handling, terminal text sanitization, and numeric validation
+
+### Changed
+
+- CLI and MCP input validation now enforce non-negative finite rates, bounded integer min blocks, positive session IDs, and bounded payment terms
+- Setup now creates config directory/file with restrictive modes where supported (`0700` dir, `0600` file)
+- Config loading now returns a clear recovery message when `~/.work-timer/config.json` is malformed
+- Terminal output formatting now strips ANSI escape/control characters from user-controlled fields
+
 ## [1.1.0] - 2026-03-25
 
 ### Added

@@ -15,6 +15,8 @@ work-timer export --project "Client Alpha"  # Filter by project
 work-timer export --from 2026-01-01 --to 2026-03-31  # Date range
 ```
 
+Security note: values that look like spreadsheet formulas are exported as literal text to reduce CSV/Excel formula-injection risk.
+
 ### Excel (XLSX)
 
 Formatted Excel workbook with styled headers, number formatting, and auto-calculated totals by project.
@@ -140,3 +142,4 @@ Via your AI assistant:
 > "Export all unbilled sessions in Xero format with account code 400"
 
 The MCP tools: `export_csv` returns CSV text, `export_xlsx` writes an Excel file, and `export_preset` produces accounting-specific CSV.
+For file-writing MCP tools (`export_xlsx`, `export_preset` with `output_path`), `output_path` must be relative and is confined to `~/.work-timer/exports`.

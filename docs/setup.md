@@ -33,7 +33,7 @@ You can now run `work-timer` from any directory.
 
 ```bash
 work-timer --version
-# Should output: 1.0.0
+# Should output: 1.1.1
 ```
 
 ## Step 2: Create a Turso Database
@@ -81,6 +81,7 @@ work-timer setup
 ```
 
 This will prompt you for your Turso URL and token, and save them to `~/.work-timer/config.json`.
+The auth token input is hidden while you type.
 
 ### Option B: Environment Variables
 

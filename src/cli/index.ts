@@ -22,13 +22,40 @@ import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
+import { Writable } from 'node:stream';
 
 const program = new Command();
+
+function parseNonNegativeNumber(value: string, label: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${label} must be a non-negative finite number.`);
+  }
+  return parsed;
+}
+
+function parseBoundedNonNegativeInteger(value: string, label: string, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) {
+    throw new Error(`${label} must be an integer between 0 and ${max}.`);
+  }
+  return parsed;
+}
+
+function parsePositiveSessionIds(sessionIds: string[]): number[] {
+  return sessionIds.map((id) => {
+    const parsed = Number(id);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error(`Invalid session ID: ${id}. Session IDs must be positive integers.`);
+    }
+    return parsed;
+  });
+}
 
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.0.0');
+  .version('1.1.1');
 
 // --- Setup ---
 
@@ -36,9 +63,29 @@ program
   .command('setup')
   .description('Configure Work-Timer with your Turso database credentials')
   .action(async () => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    let muteOutput = false;
+    const mutedOutput = new Writable({
+      write(chunk, _encoding, callback) {
+        if (!muteOutput) {
+          process.stdout.write(chunk);
+        }
+        callback();
+      },
+    });
+    const rl = createInterface({ input: process.stdin, output: mutedOutput });
+
     const ask = (q: string): Promise<string> =>
       new Promise((resolve) => rl.question(q, resolve));
+    const askSecret = (q: string): Promise<string> =>
+      new Promise((resolve) => {
+        process.stdout.write(q);
+        muteOutput = true;
+        rl.question('', (answer) => {
+          muteOutput = false;
+          process.stdout.write('\n');
+          resolve(answer);
+        });
+      });
 
     console.log('Work-Timer Setup');
     console.log('================');
@@ -53,7 +100,7 @@ program
     console.log('');
 
     const url = await ask('Turso database URL: ');
-    const token = await ask('Turso auth token: ');
+    const token = await askSecret('Turso auth token: ');
 
     if (!url || !token) {
       console.error('Both URL and token are required.');
@@ -63,13 +110,14 @@ program
 
     const configDir = join(homedir(), '.work-timer');
     if (!existsSync(configDir)) {
-      mkdirSync(configDir, { recursive: true });
+      mkdirSync(configDir, { recursive: true, mode: 0o700 });
     }
 
     const configPath = join(configDir, 'config.json');
     writeFileSync(
       configPath,
-      JSON.stringify({ turso_url: url, turso_auth_token: token }, null, 2)
+      JSON.stringify({ turso_url: url, turso_auth_token: token }, null, 2),
+      { mode: 0o600 }
     );
 
     console.log(`\nConfig saved to ${configPath}`);
@@ -82,7 +130,7 @@ program
 program
   .command('start <project>')
   .description('Start a timer for a project')
-  .option('--rate <number>', 'Billing rate per hour', parseFloat)
+  .option('--rate <number>', 'Billing rate per hour', (value: string) => parseNonNegativeNumber(value, 'Rate'))
   .option('--currency <code>', 'Currency code')
   .option('--notes <text>', 'Session notes')
   .action(async (project: string, opts: { rate?: number; currency?: string; notes?: string }) => {
@@ -163,9 +211,10 @@ const projectCmd = program.command('project').description('Manage projects');
 projectCmd
   .command('create <name>')
   .description('Create a new project')
-  .option('--rate <number>', 'Billing rate per hour', parseFloat)
+  .option('--rate <number>', 'Billing rate per hour', (value: string) => parseNonNegativeNumber(value, 'Rate'))
   .option('--currency <code>', 'Currency code')
-  .option('--min-block <minutes>', 'Minimum billing block in minutes', parseInt)
+  .option('--min-block <minutes>', 'Minimum billing block in minutes', (value: string) =>
+    parseBoundedNonNegativeInteger(value, 'Minimum billing block', 1440))
   .action(async (name: string, opts: { rate?: number; currency?: string; minBlock?: number }) => {
     try {
       const client = await getClient();
@@ -190,9 +239,10 @@ projectCmd
 projectCmd
   .command('update <name>')
   .description('Update a project')
-  .option('--rate <number>', 'Billing rate per hour', parseFloat)
+  .option('--rate <number>', 'Billing rate per hour', (value: string) => parseNonNegativeNumber(value, 'Rate'))
   .option('--currency <code>', 'Currency code')
-  .option('--min-block <minutes>', 'Minimum billing block in minutes', parseInt)
+  .option('--min-block <minutes>', 'Minimum billing block in minutes', (value: string) =>
+    parseBoundedNonNegativeInteger(value, 'Minimum billing block', 1440))
   .option('--archive', 'Archive the project')
   .option('--unarchive', 'Unarchive the project')
   .action(
@@ -294,7 +344,7 @@ program
   .action(async (sessionIds: string[], opts: { ref?: string }) => {
     try {
       const client = await getClient();
-      const ids = sessionIds.map((id) => parseInt(id, 10));
+      const ids = parsePositiveSessionIds(sessionIds);
       const count = await markInvoiced(client, ids, opts.ref);
       console.log(`Marked ${count} session(s) as invoiced.${opts.ref ? ` Ref: ${opts.ref}` : ''}`);
     } catch (e) {
@@ -309,7 +359,7 @@ program
   .action(async (sessionIds: string[]) => {
     try {
       const client = await getClient();
-      const ids = sessionIds.map((id) => parseInt(id, 10));
+      const ids = parsePositiveSessionIds(sessionIds);
       const count = await markPaid(client, ids);
       console.log(`Marked ${count} session(s) as paid.`);
     } catch (e) {
@@ -331,7 +381,8 @@ program
   .option(`--preset <name>`, `Accounting preset: ${listPresetIds().join(', ')}`)
   .option('--account-code <code>', 'Account code (for Xero, Sage, MYOB presets)')
   .option('--tax-type <type>', 'Tax type (for Xero, Sage presets)')
-  .option('--payment-terms <days>', 'Payment terms in days for DueDate calculation', parseInt)
+  .option('--payment-terms <days>', 'Payment terms in days for DueDate calculation', (value: string) =>
+    parseBoundedNonNegativeInteger(value, 'Payment terms', 3650))
   .action(
     async (opts: {
       project?: string; from?: string; to?: string; output?: string; format: string;

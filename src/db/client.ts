@@ -25,10 +25,16 @@ export function loadConfig(): Config | null {
 
   // Fall back to config file
   if (existsSync(configPath)) {
-    const raw = readFileSync(configPath, 'utf-8');
-    const parsed = JSON.parse(raw) as Partial<Config>;
-    if (parsed.turso_url && parsed.turso_auth_token) {
-      return parsed as Config;
+    try {
+      const raw = readFileSync(configPath, 'utf-8');
+      const parsed = JSON.parse(raw) as Partial<Config>;
+      if (parsed.turso_url && parsed.turso_auth_token) {
+        return parsed as Config;
+      }
+    } catch {
+      throw new Error(
+        `Invalid config file at ${configPath}. Re-run "work-timer setup" or fix the JSON format.`
+      );
     }
   }
 

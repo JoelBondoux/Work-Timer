@@ -245,7 +245,7 @@ Export billing data as a formatted Excel workbook.
 | `project` | string | No | Filter by project |
 | `from` | string | No | Start date |
 | `to` | string | No | End date |
-| `output_path` | string | Yes | File path for the .xlsx file |
+| `output_path` | string | Yes | Relative file path under `~/.work-timer/exports` for the `.xlsx` file |
 
 **Example prompts:**
 - "Export my billing as an Excel file to ~/Desktop/billing.xlsx"
@@ -263,7 +263,7 @@ Export billing data as CSV formatted for a specific accounting package (QuickBoo
 | `project` | string | No | Filter by project |
 | `from` | string | No | Start date |
 | `to` | string | No | End date |
-| `output_path` | string | No | File path (if omitted, returns CSV text) |
+| `output_path` | string | No | Relative file path under `~/.work-timer/exports` (if omitted, returns CSV text) |
 | `account_code` | string | No | Account code (Xero, Sage, MYOB) |
 | `tax_type` | string | No | Tax type (Xero, Sage) |
 | `payment_terms_days` | number | No | Payment terms in days for DueDate (default 30) |

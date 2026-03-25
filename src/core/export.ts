@@ -4,6 +4,8 @@ import type { BillingRecord } from '../types.js';
 import ExcelJS from 'exceljs';
 import { getPreset, type PresetOptions } from './presets.js';
 
+const DANGEROUS_SPREADSHEET_PREFIXES = new Set(['=', '+', '-', '@']);
+
 const CSV_HEADERS = [
   'Project',
   'Date',
@@ -27,9 +29,24 @@ function escapeCsv(value: string): string {
   return value;
 }
 
+export function sanitizeSpreadsheetCell(value: string): string {
+  const trimmed = value.trimStart();
+  if (!trimmed) {
+    return value;
+  }
+
+  // Allow plain numeric values (including signed) so amounts and rates remain numeric in exports.
+  const looksNumeric = /^[+-]?\d+(\.\d+)?$/.test(trimmed);
+  if (!looksNumeric && DANGEROUS_SPREADSHEET_PREFIXES.has(trimmed[0])) {
+    return `'${value}`;
+  }
+
+  return value;
+}
+
 function recordToCsvRow(record: BillingRecord): string {
   const values = [
-    record.project_name,
+    sanitizeSpreadsheetCell(record.project_name),
     record.date,
     record.start_time,
     record.end_time,
@@ -39,9 +56,9 @@ function recordToCsvRow(record: BillingRecord): string {
     record.currency,
     record.amount.toFixed(2),
     record.invoiced ? 'Invoiced' : 'Not Invoiced',
-    record.invoice_ref ?? '',
+    sanitizeSpreadsheetCell(record.invoice_ref ?? ''),
     record.paid ? 'Paid' : 'Unpaid',
-    record.notes ?? '',
+    sanitizeSpreadsheetCell(record.notes ?? ''),
   ];
   return values.map(escapeCsv).join(',');
 }
@@ -68,7 +85,7 @@ export async function exportPresetCsv(
   const summary = await getBillingSummary(client, filters);
   const lines = [preset.columns.map(escapeCsv).join(',')];
   for (const record of summary.records) {
-    lines.push(preset.mapRecord(record, options).map(escapeCsv).join(','));
+    lines.push(preset.mapRecord(record, options).map(sanitizeSpreadsheetCell).map(escapeCsv).join(','));
   }
   return lines.join('\n');
 }
@@ -115,7 +132,7 @@ export async function exportXlsx(
   // Add data rows
   for (const record of summary.records) {
     sheet.addRow({
-      project: record.project_name,
+      project: sanitizeSpreadsheetCell(record.project_name),
       date: record.date,
       start: record.start_time,
       end: record.end_time,
@@ -125,9 +142,9 @@ export async function exportXlsx(
       currency: record.currency,
       amount: record.amount,
       invoiceStatus: record.invoiced ? 'Invoiced' : 'Not Invoiced',
-      invoiceRef: record.invoice_ref ?? '',
+      invoiceRef: sanitizeSpreadsheetCell(record.invoice_ref ?? ''),
       paymentStatus: record.paid ? 'Paid' : 'Unpaid',
-      notes: record.notes ?? '',
+      notes: sanitizeSpreadsheetCell(record.notes ?? ''),
     });
   }
 
@@ -148,7 +165,7 @@ export async function exportXlsx(
 
     for (const [, total] of summary.totals_by_project) {
       sheet.addRow({
-        project: total.project_name,
+        project: sanitizeSpreadsheetCell(total.project_name),
         duration: Math.round((total.total_raw_minutes / 60) * 100) / 100,
         billed: Math.round((total.total_billed_minutes / 60) * 100) / 100,
         currency: total.currency,

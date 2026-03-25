@@ -1,6 +1,30 @@
 import type { Client } from '@libsql/client';
 import type { Project } from '../types.js';
 
+function validateRate(rate: number): void {
+  if (!Number.isFinite(rate) || rate < 0) {
+    throw new Error('Rate must be a non-negative finite number.');
+  }
+}
+
+function validateMinBlockMinutes(minBlockMinutes: number): void {
+  if (!Number.isInteger(minBlockMinutes) || minBlockMinutes < 0 || minBlockMinutes > 1440) {
+    throw new Error('Minimum billing block must be an integer between 0 and 1440 minutes.');
+  }
+}
+
+function validateProjectNumericOptions(opts?: { rate?: number; min_block_minutes?: number }): void {
+  if (!opts) {
+    return;
+  }
+  if (opts.rate !== undefined) {
+    validateRate(opts.rate);
+  }
+  if (opts.min_block_minutes !== undefined) {
+    validateMinBlockMinutes(opts.min_block_minutes);
+  }
+}
+
 function rowToProject(row: Record<string, unknown>): Project {
   return {
     id: row.id as number,
@@ -18,6 +42,8 @@ export async function createProject(
   name: string,
   opts?: { rate?: number; currency?: string; min_block_minutes?: number }
 ): Promise<Project> {
+  validateProjectNumericOptions(opts);
+
   const result = await client.execute({
     sql: `INSERT INTO projects (name, billing_rate, currency, min_block_minutes)
           VALUES (?, ?, ?, ?)`,
@@ -34,6 +60,8 @@ export async function updateProject(
   nameOrId: string | number,
   updates: { rate?: number; currency?: string; min_block_minutes?: number; archived?: boolean }
 ): Promise<Project> {
+  validateProjectNumericOptions(updates);
+
   const project = typeof nameOrId === 'number'
     ? await getProjectById(client, nameOrId)
     : await getProjectByName(client, nameOrId);

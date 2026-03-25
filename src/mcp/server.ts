@@ -9,6 +9,7 @@ import { getBillingSummary } from '../core/billing.js';
 import { markInvoiced, markPaid, querySessions } from '../core/sessions.js';
 import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
 import { listPresetIds } from '../core/presets.js';
+import { getMcpExportRoot, resolveMcpOutputPath } from '../core/output-path.js';
 import {
   formatRunningTimers,
   formatBillingRecords,
@@ -29,8 +30,12 @@ function errorResult(message: string) {
 
 const server = new McpServer({
   name: 'work-timer',
-  version: '1.0.0',
+  version: '1.1.1',
 });
+
+const nonNegativeFiniteNumber = z.number().finite().nonnegative();
+const nonNegativeInteger = z.number().int().nonnegative();
+const positiveInteger = z.number().int().positive();
 
 // --- Timer tools ---
 
@@ -39,7 +44,7 @@ server.tool(
   'Start a timer for a project. Creates the project if it does not exist.',
   {
     project: z.string().describe('Project name'),
-    rate: z.number().optional().describe('Billing rate per hour'),
+    rate: nonNegativeFiniteNumber.optional().describe('Billing rate per hour'),
     currency: z.string().optional().describe('Currency code (e.g. USD, EUR, GBP)'),
     notes: z.string().optional().describe('Notes for this session'),
   },
@@ -133,9 +138,9 @@ server.tool(
   'Create a new project with optional billing settings.',
   {
     name: z.string().describe('Project name'),
-    rate: z.number().optional().describe('Billing rate per hour'),
+    rate: nonNegativeFiniteNumber.optional().describe('Billing rate per hour'),
     currency: z.string().optional().describe('Currency code'),
-    min_block_minutes: z.number().optional().describe('Minimum billing block in minutes'),
+    min_block_minutes: nonNegativeInteger.max(1440).optional().describe('Minimum billing block in minutes'),
   },
   async ({ name, rate, currency, min_block_minutes }) => {
     try {
@@ -158,9 +163,9 @@ server.tool(
   'Update a project\'s billing settings.',
   {
     name: z.string().describe('Project name'),
-    rate: z.number().optional().describe('New billing rate per hour'),
+    rate: nonNegativeFiniteNumber.optional().describe('New billing rate per hour'),
     currency: z.string().optional().describe('New currency code'),
-    min_block_minutes: z.number().optional().describe('New minimum billing block in minutes'),
+    min_block_minutes: nonNegativeInteger.max(1440).optional().describe('New minimum billing block in minutes'),
     archived: z.boolean().optional().describe('Archive or unarchive the project'),
   },
   async ({ name, rate, currency, min_block_minutes, archived }) => {
@@ -260,7 +265,7 @@ server.tool(
   'mark_invoiced',
   'Mark completed sessions as invoiced.',
   {
-    session_ids: z.array(z.number()).describe('Session IDs to mark as invoiced'),
+    session_ids: z.array(positiveInteger).min(1).describe('Session IDs to mark as invoiced'),
     invoice_ref: z.string().optional().describe('Invoice reference number'),
   },
   async ({ session_ids, invoice_ref }) => {
@@ -278,7 +283,7 @@ server.tool(
   'mark_paid',
   'Mark completed sessions as paid.',
   {
-    session_ids: z.array(z.number()).describe('Session IDs to mark as paid'),
+    session_ids: z.array(positiveInteger).min(1).describe('Session IDs to mark as paid'),
   },
   async ({ session_ids }) => {
     try {
@@ -326,8 +331,9 @@ server.tool(
       const client = await getClient();
       const buffer = await exportXlsx(client, { projectName: project, from, to });
       const { writeFileSync } = await import('node:fs');
-      writeFileSync(output_path, buffer);
-      return textResult(`Excel file written to: ${output_path}`);
+      const safeOutputPath = resolveMcpOutputPath(output_path, '.xlsx');
+      writeFileSync(safeOutputPath, buffer);
+      return textResult(`Excel file written to: ${safeOutputPath}\nExport root: ${getMcpExportRoot()}`);
     } catch (e) {
       return errorResult((e as Error).message);
     }
@@ -345,7 +351,7 @@ server.tool(
     output_path: z.string().optional().describe('File path to write the CSV (if omitted, returns content)'),
     account_code: z.string().optional().describe('Account code (Xero, Sage, MYOB)'),
     tax_type: z.string().optional().describe('Tax type (Xero, Sage)'),
-    payment_terms_days: z.number().optional().describe('Payment terms in days for DueDate (default 30)'),
+    payment_terms_days: nonNegativeInteger.max(3650).optional().describe('Payment terms in days for DueDate (default 30)'),
   },
   async ({ preset, project, from, to, output_path, account_code, tax_type, payment_terms_days }) => {
     try {
@@ -358,8 +364,9 @@ server.tool(
       );
       if (output_path) {
         const { writeFileSync } = await import('node:fs');
-        writeFileSync(output_path, csv);
-        return textResult(`${preset} CSV written to: ${output_path}`);
+        const safeOutputPath = resolveMcpOutputPath(output_path, '.csv');
+        writeFileSync(safeOutputPath, csv);
+        return textResult(`${preset} CSV written to: ${safeOutputPath}\nExport root: ${getMcpExportRoot()}`);
       }
       return textResult(csv);
     } catch (e) {

@@ -100,4 +100,5 @@ work-timer project update "Client" --rate 225
 |------|----------|
 | Config file | `~/.work-timer/config.json` |
 | Database | Turso cloud (URL in config) |
-| Exports | Wherever you specify with `--output` |
+| CLI exports | Wherever you specify with `--output` |
+| MCP file exports | Under `~/.work-timer/exports` (relative `output_path`) |

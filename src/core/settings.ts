@@ -34,10 +34,17 @@ export async function updateSetting(client: Client, key: SettingKey, value: stri
   }
 
   // Validate numeric settings
-  if (key === 'default_rate' || key === 'default_min_block_minutes') {
+  if (key === 'default_rate') {
     const num = parseFloat(value);
-    if (isNaN(num) || num < 0) {
-      throw new Error(`${key} must be a non-negative number`);
+    if (!Number.isFinite(num) || num < 0) {
+      throw new Error(`${key} must be a non-negative finite number`);
+    }
+  }
+
+  if (key === 'default_min_block_minutes') {
+    const num = Number(value);
+    if (!Number.isInteger(num) || num < 0 || num > 1440) {
+      throw new Error(`${key} must be an integer between 0 and 1440`);
     }
   }
 

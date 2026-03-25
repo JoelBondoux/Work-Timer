@@ -22,6 +22,8 @@ work-timer start "Quick Fix" --notes "Emergency bugfix for login page"
 | `--currency <code>` | Set currency code, e.g. USD, EUR, GBP |
 | `--notes <text>` | Add notes to this session |
 
+`--rate` must be a non-negative finite number.
+
 **Behavior:**
 - Creates the project if it doesn't exist
 - Fails if the project already has a running or paused timer
@@ -94,6 +96,10 @@ work-timer project create "Pro Bono Work"  # Uses global defaults
 | `--currency <code>` | Currency code |
 | `--min-block <minutes>` | Minimum billing block in minutes |
 
+Validation rules:
+`--rate` must be a non-negative finite number.
+`--min-block` must be an integer between `0` and `1440`.
+
 ### `work-timer project update <name>`
 
 Update a project's settings.
@@ -113,6 +119,10 @@ work-timer project update "Old Client" --unarchive
 | `--min-block <minutes>` | New minimum billing block |
 | `--archive` | Archive the project |
 | `--unarchive` | Unarchive the project |
+
+Validation rules:
+`--rate` must be a non-negative finite number.
+`--min-block` must be an integer between `0` and `1440`.
 
 ### `work-timer projects`
 
@@ -173,6 +183,8 @@ work-timer invoice 1 2 3                    # Mark sessions 1, 2, 3 as invoiced
 work-timer invoice 5 6 --ref "INV-2026-001" # With invoice reference
 ```
 
+Session IDs must be positive integers.
+
 **Options:**
 
 | Flag | Description |
@@ -186,6 +198,8 @@ Mark one or more sessions as paid.
 ```bash
 work-timer paid 1 2 3   # Mark sessions 1, 2, 3 as paid
 ```
+
+Session IDs must be positive integers.
 
 ## Export Commands
 
@@ -215,6 +229,8 @@ work-timer export --preset xero --account-code 400          # Xero with custom a
 | `--account-code <code>` | Account code (Xero, Sage, MYOB presets) |
 | `--tax-type <type>` | Tax type (Xero, Sage presets) |
 | `--payment-terms <days>` | Payment terms in days for DueDate (default 30) |
+
+`--payment-terms` must be an integer between `0` and `3650`.
 
 When `--preset` is used, the output is always CSV in the target accounting format. The `--format` flag is ignored.
 
