@@ -191,13 +191,15 @@ work-timer paid 1 2 3   # Mark sessions 1, 2, 3 as paid
 
 ### `work-timer export`
 
-Export billing data as CSV or Excel.
+Export billing data as CSV, Excel, or accounting-specific format.
 
 ```bash
 work-timer export                                           # CSV to stdout
 work-timer export --output billing.csv                      # CSV to file
 work-timer export --format xlsx --output billing.xlsx       # Excel file
 work-timer export --project "Client Alpha" --from 2026-01-01  # Filtered export
+work-timer export --preset quickbooks --output march.csv    # QuickBooks format
+work-timer export --preset xero --account-code 400          # Xero with custom account
 ```
 
 **Options:**
@@ -209,6 +211,12 @@ work-timer export --project "Client Alpha" --from 2026-01-01  # Filtered export
 | `--to <date>` | End date filter |
 | `--output <file>` | Output file path |
 | `--format <fmt>` | `csv` (default) or `xlsx` |
+| `--preset <name>` | Accounting preset: `quickbooks`, `xero`, `freshbooks`, `sage`, `myob` |
+| `--account-code <code>` | Account code (Xero, Sage, MYOB presets) |
+| `--tax-type <type>` | Tax type (Xero, Sage presets) |
+| `--payment-terms <days>` | Payment terms in days for DueDate (default 30) |
+
+When `--preset` is used, the output is always CSV in the target accounting format. The `--format` flag is ignored.
 
 ## Configuration Commands
 

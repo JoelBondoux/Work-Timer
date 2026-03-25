@@ -7,7 +7,8 @@ import { createProject, updateProject, listProjects, getProjectByName } from '..
 import { getSettings, updateSetting, getEffectiveRate, getEffectiveCurrency, getEffectiveMinBlock } from '../core/settings.js';
 import { getBillingSummary } from '../core/billing.js';
 import { markInvoiced, markPaid } from '../core/sessions.js';
-import { exportCsv, exportXlsx } from '../core/export.js';
+import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
+import { listPresetIds } from '../core/presets.js';
 import {
   formatRunningTimers,
   formatBillingRecords,
@@ -327,13 +328,33 @@ program
   .option('--to <date>', 'End date')
   .option('--output <file>', 'Output file path')
   .option('--format <fmt>', 'Format: csv or xlsx', 'csv')
+  .option(`--preset <name>`, `Accounting preset: ${listPresetIds().join(', ')}`)
+  .option('--account-code <code>', 'Account code (for Xero, Sage, MYOB presets)')
+  .option('--tax-type <type>', 'Tax type (for Xero, Sage presets)')
+  .option('--payment-terms <days>', 'Payment terms in days for DueDate calculation', parseInt)
   .action(
-    async (opts: { project?: string; from?: string; to?: string; output?: string; format: string }) => {
+    async (opts: {
+      project?: string; from?: string; to?: string; output?: string; format: string;
+      preset?: string; accountCode?: string; taxType?: string; paymentTerms?: number;
+    }) => {
       try {
         const client = await getClient();
         const filters = { projectName: opts.project, from: opts.from, to: opts.to };
 
-        if (opts.format === 'xlsx') {
+        if (opts.preset) {
+          const presetOptions = {
+            accountCode: opts.accountCode,
+            taxType: opts.taxType,
+            paymentTermsDays: opts.paymentTerms,
+          };
+          const csv = await exportPresetCsv(client, filters, opts.preset, presetOptions);
+          if (opts.output) {
+            writeFileSync(opts.output, csv);
+            console.log(`${opts.preset} CSV written to: ${opts.output}`);
+          } else {
+            console.log(csv);
+          }
+        } else if (opts.format === 'xlsx') {
           const buffer = await exportXlsx(client, filters);
           const outputPath = opts.output ?? 'billing-export.xlsx';
           writeFileSync(outputPath, buffer);

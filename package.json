@@ -1,6 +1,6 @@
 {
   "name": "work-timer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A zero-cost, local-first work timer and billing tool for solo contractors. Control via natural language through any MCP-compatible LLM client or CLI.",
   "type": "module",
   "main": "./dist/mcp/server.js",
@@ -27,7 +27,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@libsql/client": "^0.14.0",
+    "@libsql/client": "^0.17.2",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "commander": "^14.0.0",
     "exceljs": "^4.4.0",

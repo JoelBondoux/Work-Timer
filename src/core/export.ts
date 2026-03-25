@@ -2,6 +2,7 @@ import type { Client } from '@libsql/client';
 import { getBillingSummary, type BillingQueryFilters } from './billing.js';
 import type { BillingRecord } from '../types.js';
 import ExcelJS from 'exceljs';
+import { getPreset, type PresetOptions } from './presets.js';
 
 const CSV_HEADERS = [
   'Project',
@@ -53,6 +54,21 @@ export async function exportCsv(
   const lines = [CSV_HEADERS.join(',')];
   for (const record of summary.records) {
     lines.push(recordToCsvRow(record));
+  }
+  return lines.join('\n');
+}
+
+export async function exportPresetCsv(
+  client: Client,
+  filters: BillingQueryFilters,
+  presetId: string,
+  options: PresetOptions = {}
+): Promise<string> {
+  const preset = getPreset(presetId);
+  const summary = await getBillingSummary(client, filters);
+  const lines = [preset.columns.map(escapeCsv).join(',')];
+  for (const record of summary.records) {
+    lines.push(preset.mapRecord(record, options).map(escapeCsv).join(','));
   }
   return lines.join('\n');
 }

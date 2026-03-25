@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm link:*)",
+      "Bash(work-timer --version)",
+      "Bash(npm prefix:*)",
+      "Bash(ls c:/Users/joel/OneDrive/Dev/Work-Timer/*.md)",
+      "Bash(winget search:*)",
+      "WebFetch(domain:docs.turso.tech)",
+      "WebFetch(domain:turso.tech)",
+      "WebFetch(domain:app.turso.tech)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:openai.com)",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:help.openai.com)",
+      "WebFetch(domain:www.youtube.com)",
+      "WebSearch",
+      "WebFetch(domain:www.docuclipper.com)",
+      "WebFetch(domain:gentlefrog.com)",
+      "WebFetch(domain:help.sbc.sage.com)",
+      "WebFetch(domain:central.xero.com)",
+      "WebFetch(domain:learning.casemanager.biz)",
+      "WebFetch(domain:www.firmofthefuture.com)",
+      "WebFetch(domain:fastlane-global.com)",
+      "Bash(npm test:*)"
+    ]
+  }
+}

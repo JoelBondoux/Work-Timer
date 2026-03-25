@@ -7,7 +7,8 @@ import { createProject, updateProject, listProjects, getProjectByName } from '..
 import { getSettings, updateSetting, getEffectiveRate, getEffectiveCurrency, getEffectiveMinBlock } from '../core/settings.js';
 import { getBillingSummary } from '../core/billing.js';
 import { markInvoiced, markPaid, querySessions } from '../core/sessions.js';
-import { exportCsv, exportXlsx } from '../core/export.js';
+import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
+import { listPresetIds } from '../core/presets.js';
 import {
   formatRunningTimers,
   formatBillingRecords,
@@ -327,6 +328,40 @@ server.tool(
       const { writeFileSync } = await import('node:fs');
       writeFileSync(output_path, buffer);
       return textResult(`Excel file written to: ${output_path}`);
+    } catch (e) {
+      return errorResult((e as Error).message);
+    }
+  }
+);
+
+server.tool(
+  'export_preset',
+  'Export billing data as CSV formatted for a specific accounting package.',
+  {
+    preset: z.enum(['quickbooks', 'xero', 'freshbooks', 'sage', 'myob']).describe('Target accounting software'),
+    project: z.string().optional().describe('Filter by project name'),
+    from: z.string().optional().describe('Start date'),
+    to: z.string().optional().describe('End date'),
+    output_path: z.string().optional().describe('File path to write the CSV (if omitted, returns content)'),
+    account_code: z.string().optional().describe('Account code (Xero, Sage, MYOB)'),
+    tax_type: z.string().optional().describe('Tax type (Xero, Sage)'),
+    payment_terms_days: z.number().optional().describe('Payment terms in days for DueDate (default 30)'),
+  },
+  async ({ preset, project, from, to, output_path, account_code, tax_type, payment_terms_days }) => {
+    try {
+      const client = await getClient();
+      const csv = await exportPresetCsv(
+        client,
+        { projectName: project, from, to },
+        preset,
+        { accountCode: account_code, taxType: tax_type, paymentTermsDays: payment_terms_days }
+      );
+      if (output_path) {
+        const { writeFileSync } = await import('node:fs');
+        writeFileSync(output_path, csv);
+        return textResult(`${preset} CSV written to: ${output_path}`);
+      }
+      return textResult(csv);
     } catch (e) {
       return errorResult((e as Error).message);
     }

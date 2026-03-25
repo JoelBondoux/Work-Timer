@@ -1,10 +1,10 @@
 # MCP Tools Reference
 
-Work-Timer exposes 15 MCP tools that any compatible AI assistant can call. This document describes each tool, its parameters, and example natural language prompts.
+Work-Timer exposes 16 MCP tools that any compatible AI assistant can call. This document describes each tool, its parameters, and example natural language prompts.
 
 ## How It Works
 
-When you add Work-Timer as an MCP server to your AI assistant (Claude Desktop, Claude Code, Cursor, etc.), the assistant can call these tools on your behalf. You simply speak naturally, and the assistant maps your intent to the right tool.
+When you add Work-Timer as an MCP server to your AI assistant (Claude Desktop, ChatGPT, GitHub Copilot, Cursor, etc.), the assistant can call these tools on your behalf. You simply speak naturally, and the assistant maps your intent to the right tool.
 
 ## Timer Tools
 
@@ -250,6 +250,29 @@ Export billing data as a formatted Excel workbook.
 **Example prompts:**
 - "Export my billing as an Excel file to ~/Desktop/billing.xlsx"
 - "Create an Excel report for Client Alpha"
+
+### `export_preset`
+
+Export billing data as CSV formatted for a specific accounting package (QuickBooks, Xero, FreshBooks, Sage, MYOB).
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `preset` | enum | Yes | Target: `quickbooks`, `xero`, `freshbooks`, `sage`, `myob` |
+| `project` | string | No | Filter by project |
+| `from` | string | No | Start date |
+| `to` | string | No | End date |
+| `output_path` | string | No | File path (if omitted, returns CSV text) |
+| `account_code` | string | No | Account code (Xero, Sage, MYOB) |
+| `tax_type` | string | No | Tax type (Xero, Sage) |
+| `payment_terms_days` | number | No | Payment terms in days for DueDate (default 30) |
+
+**Example prompts:**
+- "Export my March billing for QuickBooks"
+- "Export Client Alpha's time in Xero format with account code 400"
+- "Create a Sage export for Q1 and save it to billing.csv"
+- "Export all unbilled sessions for FreshBooks"
 
 ## Settings Tool
 

@@ -5,12 +5,12 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 ## Features
 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
-- **MCP server** — Works with Claude Desktop, Claude Code, Cursor, and any MCP-compatible client
+- **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
 - **CLI** — Full command-line interface for quick manual use
 - **Overlapping timers** — Bill multiple clients simultaneously
 - **Flexible billing** — Per-project rates, currencies, and minimum billing blocks with global defaults
 - **Invoice tracking** — Mark sessions as invoiced and paid with reference numbers
-- **Export** — CSV and formatted Excel (XLSX) export for accounting software
+- **Export** — CSV, Excel (XLSX), and accounting-specific presets (QuickBooks, Xero, FreshBooks, Sage, MYOB)
 - **Cloud sync** — Turso database means your data is accessible from any device
 - **Free** — Turso free tier (9GB, 500M reads/mo) is more than enough for any solo practice
 
@@ -26,11 +26,18 @@ npm run build
 npm link  # Makes 'work-timer' available globally
 ```
 
+> **Windows users:** `npm link` may require adding npm's global bin to your PATH and setting PowerShell's execution policy. See the [Setup Guide](docs/setup.md#npm-link-not-working-on-windows) for details.
+
 ### 2. Set Up Database
 
-Create a free [Turso](https://turso.tech) account, then:
+Create a free [Turso](https://turso.tech) account and set up a database:
+
+**Via web dashboard (recommended for Windows):** Go to [app.turso.tech](https://app.turso.tech), create a database, and copy the database URL and auth token from the database settings.
+
+**Via CLI (macOS / Linux):**
 
 ```bash
+curl -sSfL https://get.tur.so/install.sh | bash
 turso auth login
 turso db create work-timer
 turso db show work-timer --url       # Copy this
@@ -63,7 +70,7 @@ work-timer query "Client Alpha"
 
 **Via AI assistant (MCP):**
 
-Add to your Claude Desktop or Claude Code configuration:
+Add to your MCP client configuration (Claude Desktop, ChatGPT, GitHub Copilot, Cursor — see [Setup Guide](docs/setup.md#step-4-configure-mcp-client-optional) for each):
 
 ```json
 {
@@ -121,10 +128,11 @@ src/
     billing.ts      # Duration and billing calculations
     settings.ts     # Global default settings
     sessions.ts     # Session queries and invoice marking
-    export.ts       # CSV and XLSX export
+    export.ts       # CSV, XLSX, and accounting preset export
+    presets.ts      # Accounting software export presets
     format.ts       # Text formatting for output
   mcp/
-    server.ts       # MCP server with 15 tool definitions
+    server.ts       # MCP server with 16 tool definitions
   cli/
     index.ts        # CLI entry point with Commander.js
 ```

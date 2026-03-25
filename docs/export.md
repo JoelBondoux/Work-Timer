@@ -62,34 +62,70 @@ work-timer export --project "Client Alpha" --from 2026-01-01 --to 2026-03-31
 work-timer summary --unbilled
 ```
 
-## Importing into Accounting Software
+## Accounting Software Presets
 
-### Xero
+Work-Timer includes built-in export presets that produce CSV files with the exact column names, date formats, and structure required by popular accounting packages. No manual column mapping needed.
 
-1. Export as CSV
-2. In Xero, go to **Business > Invoices > Import**
-3. Map the columns to Xero's fields
-4. The "Amount" column maps to the line item total
+```bash
+work-timer export --preset quickbooks --output march.csv
+work-timer export --preset xero --from 2026-03-01 --account-code 400
+work-timer export --preset freshbooks --project "Client Alpha"
+work-timer export --preset sage --tax-type T1
+work-timer export --preset myob --output billing.csv
+```
 
-### QuickBooks Online
+### Available Presets
 
-1. Export as CSV or XLSX
+| Preset | Date Format | Key Columns |
+|--------|------------|-------------|
+| `quickbooks` | MM/DD/YYYY | InvoiceNo, Customer, InvoiceDate, DueDate, Item(Description), ItemQuantity, ItemRate, ItemAmount, ServiceDate |
+| `xero` | DD/MM/YYYY | ContactName, InvoiceNumber, InvoiceDate, DueDate, Description, Quantity, UnitAmount, AccountCode, TaxType |
+| `freshbooks` | YYYY-MM-DD | Client, Description, Amount, Date, Currency |
+| `sage` | DD/MM/YYYY | Account Reference, Nominal A/C, Date, Reference, Details, Net Amount, Tax Code, Tax Amount |
+| `myob` | DD/MM/YYYY | Co./Last Name, Date, Description, Account Number, Inclusive, Amount, Job |
+
+### Preset Options
+
+Some presets accept additional options for fields that don't exist in Work-Timer's data:
+
+| Flag | Default | Used By | Description |
+|------|---------|---------|-------------|
+| `--account-code <code>` | 200 (Xero), 4000 (Sage), 41000 (MYOB) | Xero, Sage, MYOB | Account/nominal code |
+| `--tax-type <type>` | Tax Exempt (Xero), T0 (Sage) | Xero, Sage | Tax type/code |
+| `--payment-terms <days>` | 30 | QuickBooks, Xero | Days to add for DueDate |
+
+### Importing into Your Accounting Software
+
+**QuickBooks Online:**
+1. `work-timer export --preset quickbooks --output billing.csv`
 2. In QuickBooks, go to **Settings > Import Data > Invoices**
-3. Map columns: Project → Customer, Amount → Amount, Date → Invoice Date
+3. Upload the CSV — columns should auto-map
 
-### FreshBooks
+**Xero:**
+1. `work-timer export --preset xero --output billing.csv`
+2. In Xero, go to **Business > Invoices > Import**
+3. Upload the CSV — columns match Xero's expected format
 
-1. Export as CSV
+**FreshBooks:**
+1. `work-timer export --preset freshbooks --output billing.csv`
 2. In FreshBooks, go to **Invoices > Import Time Entries**
-3. Map Duration (h) to Hours and Rate to Rate
+3. Upload the CSV
 
-### General Approach
+**Sage:**
+1. `work-timer export --preset sage --output billing.csv`
+2. Use Sage's Quick Entry import feature
 
-For any accounting software:
-1. Export as CSV (most universally supported)
-2. Open the CSV in your accounting software's import tool
-3. Map the relevant columns (typically: Project/Client, Date, Hours, Rate, Amount)
-4. Review and confirm the import
+**MYOB:**
+1. `work-timer export --preset myob --output billing.csv`
+2. Use MYOB's CSV import tool
+
+### Generic Export (No Preset)
+
+If your accounting software isn't listed, the default CSV/XLSX export includes all billing data. Use your software's column mapping tool to match the fields:
+
+```bash
+work-timer export --output billing.csv
+```
 
 ## Using Export with MCP
 
@@ -99,6 +135,8 @@ Via your AI assistant:
 
 > "Create an Excel report for all work in March and save it to my Desktop"
 
-> "Export all unbilled sessions as a spreadsheet"
+> "Export my March billing for QuickBooks"
 
-The MCP `export_csv` tool returns the CSV as text in the conversation. The `export_xlsx` tool writes a file to the specified path.
+> "Export all unbilled sessions in Xero format with account code 400"
+
+The MCP tools: `export_csv` returns CSV text, `export_xlsx` writes an Excel file, and `export_preset` produces accounting-specific CSV.
