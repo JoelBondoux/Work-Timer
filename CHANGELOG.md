@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] - 2026-03-31
+
+### Fixed
+
+- Global GitHub installs no longer depend on an install-time TypeScript compile step
+- Prebuilt `dist` artifacts are now shipped in the repository so `npm install -g github:JoelBondoux/Work-Timer#master` can link `work-timer` without running `prepare`
+- This avoids Windows temp-clone failures and `_npx` cache edge cases that caused repeated `git dep preparation failed` errors
+
 ## [1.3.3] - 2026-03-31
 
 ### Fixed

@@ -131,7 +131,7 @@ function ensureWindowsNpmBinOnPath(): { npmBin: string; addedToUserPath: boolean
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.3.3');
+  .version('1.3.4');
 
 program
   .command('update')
