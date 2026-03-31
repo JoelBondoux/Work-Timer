@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-31
+
+### Changed
+
+- Release version bumped to `1.2.0`
+
+## [1.1.7] - 2026-03-31
+
+### Added
+
+- New `work-timer update` CLI command to install the latest Work-Timer release directly from GitHub (`npm install -g github:JoelBondoux/Work-Timer`)
+- The updater prints the globally installed MCP server path so users can quickly refresh hardcoded MCP client configs
+
+### Changed
+
+- README and docs were synchronized with today's shipped behavior: project rename/delete/merge, session adjust, local-time display/filter semantics, MCP destructive-operation safety (`dry_run` + `confirm_phrase`), and current MCP tool count
+
 ## [1.1.6] - 2026-03-31
 
 ### Security

@@ -24,6 +24,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
+import { spawnSync } from 'node:child_process';
 
 function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -63,10 +64,51 @@ function parsePositiveSessionIds(sessionIds: string[]): number[] {
   });
 }
 
+function runNpm(args: string[]): { status: number | null; stderr: string; stdout: string } {
+  const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const result = spawnSync(npmBin, args, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  return {
+    status: result.status,
+    stderr: result.stderr ?? '',
+    stdout: result.stdout ?? '',
+  };
+}
+
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.1.6');
+  .version('1.2.0');
+
+program
+  .command('update')
+  .description('Update Work-Timer (including MCP server) to the latest version from GitHub')
+  .action(() => {
+    try {
+      console.log('Updating Work-Timer from GitHub...');
+      const install = runNpm(['install', '-g', 'github:JoelBondoux/Work-Timer']);
+      if (install.status !== 0) {
+        throw new Error(install.stderr.trim() || 'npm install failed');
+      }
+
+      const root = runNpm(['root', '-g']);
+      if (root.status !== 0) {
+        throw new Error(root.stderr.trim() || 'npm root failed');
+      }
+
+      const globalRoot = root.stdout.trim().split(/\r?\n/).pop() ?? root.stdout.trim();
+      const mcpPath = join(globalRoot, 'work-timer', 'dist', 'mcp', 'server.js');
+
+      console.log('Update complete.');
+      console.log(`MCP server path: ${mcpPath}`);
+      console.log('If your MCP client uses a hardcoded path, update it to this location.');
+    } catch (e) {
+      console.error(`Update failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
 
 // --- Setup ---
 
