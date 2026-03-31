@@ -14,7 +14,9 @@ work-timer update
 
 Behavior:
 - Runs `npm install -g github:JoelBondoux/Work-Timer`
+- On Windows, auto-adds npm global bin (from `npm prefix -g`) to user PATH when missing
 - Prints the globally installed MCP server path (`.../work-timer/dist/mcp/server.js`)
+- Shows full npm output when update fails (instead of a generic error)
 - Useful when your MCP client points to a hardcoded server path and you want the newest release quickly
 
 ## Timer Commands
@@ -153,7 +155,7 @@ work-timer projects --all   # Include archived projects
 Rename an existing project.
 
 ```bash
-work-timer project rename "BoldBathroom" "Bold Bathroom"
+work-timer project rename "ProjectName" "Project Name"
 ```
 
 ### `work-timer project delete <name> [--force]`
@@ -175,7 +177,7 @@ Behavior:
 Move all sessions from source project into target project, then delete source.
 
 ```bash
-work-timer project merge "BoldBathroom" "Bold Bathroom"
+work-timer project merge "ProjectName" "Project Name"
 ```
 
 Behavior:

@@ -77,20 +77,78 @@ function runNpm(args: string[]): { status: number | null; stderr: string; stdout
   };
 }
 
+function getNpmGlobalPrefix(): string {
+  const prefixResult = runNpm(['prefix', '-g']);
+  if (prefixResult.status !== 0) {
+    throw new Error(prefixResult.stderr.trim() || 'npm prefix failed');
+  }
+  return prefixResult.stdout.trim().split(/\r?\n/).pop() ?? prefixResult.stdout.trim();
+}
+
+function ensureWindowsNpmBinOnPath(): { npmBin: string; addedToUserPath: boolean } | null {
+  if (process.platform !== 'win32') {
+    return null;
+  }
+
+  const npmBin = getNpmGlobalPrefix();
+
+  // Ensure this process can immediately resolve freshly installed global binaries.
+  const currentPathParts = (process.env.Path ?? '').split(';').map((p) => p.trim()).filter(Boolean);
+  const inCurrentPath = currentPathParts.some((p) => p.toLowerCase() === npmBin.toLowerCase());
+  if (!inCurrentPath) {
+    process.env.Path = process.env.Path ? `${process.env.Path};${npmBin}` : npmBin;
+  }
+
+  const script = [
+    `$npmBin = '${npmBin.replace(/'/g, "''")}'`,
+    `$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')`,
+    `$parts = @()`,
+    `if ($userPath) { $parts = $userPath -split ';' | Where-Object { $_ -and $_.Trim() -ne '' } }`,
+    `$exists = $false`,
+    `foreach ($p in $parts) { if ($p.Trim().ToLowerInvariant() -eq $npmBin.ToLowerInvariant()) { $exists = $true; break } }`,
+    `if (-not $exists) {`,
+    `  $newPath = if ($parts.Count -gt 0) { ($parts + $npmBin) -join ';' } else { $npmBin }`,
+    `  [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')`,
+    `  Write-Output 'ADDED'`,
+    `} else {`,
+    `  Write-Output 'EXISTS'`,
+    `}`,
+  ].join('; ');
+
+  const psResult = spawnSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  if (psResult.status !== 0) {
+    throw new Error(psResult.stderr.trim() || 'Failed to update user PATH');
+  }
+
+  const outcome = (psResult.stdout ?? '').trim().split(/\r?\n/).pop() ?? 'EXISTS';
+  return { npmBin, addedToUserPath: outcome === 'ADDED' };
+}
+
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.2.1');
+  .version('1.2.2');
 
 program
   .command('update')
   .description('Update Work-Timer (including MCP server) to the latest version from GitHub')
   .action(() => {
     try {
+      const pathFix = ensureWindowsNpmBinOnPath();
+      if (pathFix?.addedToUserPath) {
+        console.log(`Added npm global bin to user PATH: ${pathFix.npmBin}`);
+        console.log('Open a new terminal after this command to use updated PATH in new sessions.');
+      }
+
       console.log('Updating Work-Timer from GitHub...');
       const install = runNpm(['install', '-g', 'github:JoelBondoux/Work-Timer']);
       if (install.status !== 0) {
-        throw new Error(install.stderr.trim() || 'npm install failed');
+        const details = [install.stderr.trim(), install.stdout.trim()].filter(Boolean).join('\n');
+        throw new Error(details || 'npm install failed');
       }
 
       const root = runNpm(['root', '-g']);

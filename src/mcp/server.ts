@@ -43,7 +43,7 @@ function errorResult(message: string) {
 
 const server = new McpServer({
   name: 'work-timer',
-  version: '1.2.1',
+  version: '1.2.2',
 });
 
 const nonNegativeFiniteNumber = z.number().finite().nonnegative();

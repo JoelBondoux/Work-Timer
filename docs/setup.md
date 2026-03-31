@@ -33,7 +33,7 @@ You can now run `work-timer` from any directory.
 
 ```bash
 work-timer --version
-# Should output: 1.1.7 (or newer)
+# Should output: 1.2.2 (or newer)
 ```
 
 ### Update to Latest GitHub Version
@@ -45,6 +45,7 @@ work-timer update
 ```
 
 This runs a global GitHub install and prints the MCP server path that was installed.
+On Windows, it also adds npm's global bin directory to your user PATH when missing.
 If your MCP client uses a hardcoded path to `server.js`, update it to the path shown.
 
 ## Step 2: Create a Turso Database
