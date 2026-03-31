@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-03-31
+
+### Fixed
+
+- Added an npm `prepare` script so `npm install -g github:JoelBondoux/Work-Timer#master` builds `dist` before npm links the `work-timer` binary
+- This fixes `work-timer update` bootstrap installs from older global versions that could fetch the repo but fail to create the executable shim
+
 ## [1.3.0] - 2026-03-31
 
 ### Changed
