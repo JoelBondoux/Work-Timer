@@ -1,6 +1,18 @@
 import type { Client } from '@libsql/client';
 import type { Project } from '../types.js';
 
+async function withTransaction<T>(client: Client, work: () => Promise<T>): Promise<T> {
+  await client.execute('BEGIN IMMEDIATE');
+  try {
+    const result = await work();
+    await client.execute('COMMIT');
+    return result;
+  } catch (error) {
+    await client.execute('ROLLBACK');
+    throw error;
+  }
+}
+
 function validateRate(rate: number): void {
   if (!Number.isFinite(rate) || rate < 0) {
     throw new Error('Rate must be a non-negative finite number.');
@@ -225,20 +237,22 @@ export async function deleteProject(
     );
   }
 
-  if (sessions.rows.length > 0) {
-    await client.execute({
-      sql: 'DELETE FROM pauses WHERE session_id IN (SELECT id FROM sessions WHERE project_id = ?)',
-      args: [project.id],
-    });
-    await client.execute({
-      sql: 'DELETE FROM sessions WHERE project_id = ?',
-      args: [project.id],
-    });
-  }
+  await withTransaction(client, async () => {
+    if (sessions.rows.length > 0) {
+      await client.execute({
+        sql: 'DELETE FROM pauses WHERE session_id IN (SELECT id FROM sessions WHERE project_id = ?)',
+        args: [project.id],
+      });
+      await client.execute({
+        sql: 'DELETE FROM sessions WHERE project_id = ?',
+        args: [project.id],
+      });
+    }
 
-  await client.execute({
-    sql: 'DELETE FROM projects WHERE id = ?',
-    args: [project.id],
+    await client.execute({
+      sql: 'DELETE FROM projects WHERE id = ?',
+      args: [project.id],
+    });
   });
 }
 
@@ -265,20 +279,105 @@ export async function mergeProjects(
     throw new Error(`Cannot merge: "${sourceName}" has a running or paused timer. Stop it first.`);
   }
 
-  const result = await client.execute({
-    sql: 'UPDATE sessions SET project_id = ? WHERE project_id = ?',
-    args: [target.id, source.id],
-  });
+  let sessionsMoved = 0;
+  await withTransaction(client, async () => {
+    const result = await client.execute({
+      sql: 'UPDATE sessions SET project_id = ? WHERE project_id = ?',
+      args: [target.id, source.id],
+    });
+    sessionsMoved = result.rowsAffected ?? 0;
 
-  const sessionsMoved = result.rowsAffected ?? 0;
-
-  await client.execute({
-    sql: 'DELETE FROM projects WHERE id = ?',
-    args: [source.id],
+    await client.execute({
+      sql: 'DELETE FROM projects WHERE id = ?',
+      args: [source.id],
+    });
   });
 
   const updatedTarget = await getProjectById(client, target.id);
   return { sessionsMoved, target: updatedTarget! };
+}
+
+export interface ProjectDeleteImpact {
+  project_name: string;
+  has_active_timer: boolean;
+  sessions_count: number;
+  pauses_count: number;
+  requires_force: boolean;
+}
+
+export async function getProjectDeleteImpact(
+  client: Client,
+  name: string,
+): Promise<ProjectDeleteImpact> {
+  const project = await getProjectByName(client, name);
+  if (!project) throw new Error(`Project not found: "${name}"`);
+
+  const active = await client.execute({
+    sql: `SELECT COUNT(*) as c FROM sessions WHERE project_id = ? AND status IN ('running', 'paused')`,
+    args: [project.id],
+  });
+  const sessions = await client.execute({
+    sql: 'SELECT COUNT(*) as c FROM sessions WHERE project_id = ?',
+    args: [project.id],
+  });
+  const pauses = await client.execute({
+    sql: `SELECT COUNT(*) as c FROM pauses WHERE session_id IN (SELECT id FROM sessions WHERE project_id = ?)`,
+    args: [project.id],
+  });
+
+  const activeCount = Number(active.rows[0].c as number | bigint);
+  const sessionCount = Number(sessions.rows[0].c as number | bigint);
+  const pauseCount = Number(pauses.rows[0].c as number | bigint);
+
+  return {
+    project_name: project.name,
+    has_active_timer: activeCount > 0,
+    sessions_count: sessionCount,
+    pauses_count: pauseCount,
+    requires_force: sessionCount > 0,
+  };
+}
+
+export interface ProjectMergeImpact {
+  source: string;
+  target: string;
+  blocked_by_active_timer: boolean;
+  sessions_to_move: number;
+}
+
+export async function getProjectMergeImpact(
+  client: Client,
+  sourceName: string,
+  targetName: string,
+): Promise<ProjectMergeImpact> {
+  const source = await getProjectByName(client, sourceName);
+  if (!source) throw new Error(`Source project not found: "${sourceName}"`);
+
+  const target = await getProjectByName(client, targetName);
+  if (!target) throw new Error(`Target project not found: "${targetName}"`);
+
+  if (source.id === target.id) {
+    throw new Error('Source and target project are the same.');
+  }
+
+  const active = await client.execute({
+    sql: `SELECT COUNT(*) as c FROM sessions WHERE project_id = ? AND status IN ('running', 'paused')`,
+    args: [source.id],
+  });
+  const sessions = await client.execute({
+    sql: 'SELECT COUNT(*) as c FROM sessions WHERE project_id = ?',
+    args: [source.id],
+  });
+
+  const activeCount = Number(active.rows[0].c as number | bigint);
+  const sessionCount = Number(sessions.rows[0].c as number | bigint);
+
+  return {
+    source: source.name,
+    target: target.name,
+    blocked_by_active_timer: activeCount > 0,
+    sessions_to_move: sessionCount,
+  };
 }
 
 /**

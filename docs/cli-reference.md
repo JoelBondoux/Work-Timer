@@ -133,6 +133,40 @@ work-timer projects         # Active projects only
 work-timer projects --all   # Include archived projects
 ```
 
+### `work-timer project rename <old-name> <new-name>`
+
+Rename an existing project.
+
+```bash
+work-timer project rename "BoldBathroom" "Bold Bathroom"
+```
+
+### `work-timer project delete <name> [--force]`
+
+Delete a project.
+
+```bash
+work-timer project delete "Old Project"
+work-timer project delete "Old Project" --force
+```
+
+Behavior:
+- Without `--force`, deletion is blocked if sessions exist.
+- With `--force`, the CLI requires typing `yes` before permanently deleting project + sessions.
+- Deletion is blocked if the project has a running or paused timer.
+
+### `work-timer project merge <source> <target>`
+
+Move all sessions from source project into target project, then delete source.
+
+```bash
+work-timer project merge "BoldBathroom" "Bold Bathroom"
+```
+
+Behavior:
+- Requires typing `yes` confirmation.
+- Blocked if the source project has a running or paused timer.
+
 ## Billing & Query Commands
 
 ### `work-timer query [project]`
@@ -200,6 +234,30 @@ work-timer paid 1 2 3   # Mark sessions 1, 2, 3 as paid
 ```
 
 Session IDs must be positive integers.
+
+## Session Commands
+
+### `work-timer session adjust <session-id>`
+
+Adjust session start and/or end timestamps.
+
+```bash
+work-timer session adjust 42 --start 2026-03-31T09:00:00
+work-timer session adjust 42 --end 2026-03-31T17:30:00
+work-timer session adjust 42 --start 2026-03-31T09:00:00 --end 2026-03-31T17:30:00
+```
+
+Options:
+
+| Flag | Description |
+|------|-------------|
+| `--start <datetime>` | New local start datetime (`YYYY-MM-DDTHH:MM:SS`) |
+| `--end <datetime>` | New local end datetime (`YYYY-MM-DDTHH:MM:SS`) |
+
+Behavior:
+- Input datetimes are interpreted as local time and converted to UTC for database storage.
+- End time can only be adjusted for completed sessions.
+- `start` must be before `end`.
 
 ## Export Commands
 

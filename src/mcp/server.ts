@@ -3,10 +3,21 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { getClient } from '../db/client.js';
 import { startTimer, stopTimer, pauseTimer, resumeTimer, getRunningTimers } from '../core/timer.js';
-import { createProject, updateProject, listProjects, getProjectByName, findSimilarProjects, renameProject, deleteProject, mergeProjects } from '../core/projects.js';
+import {
+  createProject,
+  updateProject,
+  listProjects,
+  getProjectByName,
+  findSimilarProjects,
+  renameProject,
+  deleteProject,
+  mergeProjects,
+  getProjectDeleteImpact,
+  getProjectMergeImpact,
+} from '../core/projects.js';
 import { getSettings, updateSetting, getEffectiveRate, getEffectiveCurrency, getEffectiveMinBlock } from '../core/settings.js';
 import { getBillingSummary } from '../core/billing.js';
-import { markInvoiced, markPaid, querySessions, adjustSession } from '../core/sessions.js';
+import { markInvoiced, markPaid, querySessions, adjustSession, getSession } from '../core/sessions.js';
 import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
 import { listPresetIds } from '../core/presets.js';
 import { getMcpExportRoot, resolveMcpOutputPath } from '../core/output-path.js';
@@ -18,7 +29,8 @@ import {
   formatProjectList,
   formatDuration,
 } from '../core/format.js';
-import { utcDbToLocal } from '../core/time.js';
+import { localDateTimeToUtcDb, utcDbToLocal } from '../core/time.js';
+import { requireConfirmation } from './safety.js';
 import type { SettingKey } from '../types.js';
 
 function textResult(text: string) {
@@ -31,7 +43,7 @@ function errorResult(message: string) {
 
 const server = new McpServer({
   name: 'work-timer',
-  version: '1.1.5',
+  version: '1.1.6',
 });
 
 const nonNegativeFiniteNumber = z.number().finite().nonnegative();
@@ -244,10 +256,33 @@ server.tool(
   {
     name: z.string().describe('Project name to delete'),
     force: z.boolean().optional().describe('Set to true to delete the project and all its sessions permanently'),
+    dry_run: z.boolean().optional().describe('If true, returns the impact without making changes'),
+    confirm_phrase: z.string().optional().describe('Required for execution. Exact phrase: DELETE PROJECT <name>'),
   },
-  async ({ name, force }) => {
+  async ({ name, force, dry_run, confirm_phrase }) => {
     try {
       const client = await getClient();
+
+      const impact = await getProjectDeleteImpact(client, name);
+      if (dry_run) {
+        return textResult(
+          [
+            `Dry run: project_delete`,
+            `  Project: ${impact.project_name}`,
+            `  Has active timer: ${impact.has_active_timer}`,
+            `  Sessions: ${impact.sessions_count}`,
+            `  Pauses: ${impact.pauses_count}`,
+            `  Requires force: ${impact.requires_force}`,
+            `To execute, send confirm_phrase: "DELETE PROJECT ${impact.project_name}"${impact.requires_force ? ' and force: true' : ''}.`,
+          ].join('\n')
+        );
+      }
+
+      const gate = requireConfirmation(dry_run, confirm_phrase, `DELETE PROJECT ${impact.project_name}`);
+      if (!gate.allowed) {
+        return errorResult(gate.message ?? 'Confirmation required.');
+      }
+
       await deleteProject(client, name, { force });
       return textResult(`Project "${name}" deleted.`);
     } catch (e) {
@@ -262,10 +297,32 @@ server.tool(
   {
     source: z.string().describe('Name of the project to merge from (will be deleted)'),
     target: z.string().describe('Name of the project to merge into (kept)'),
+    dry_run: z.boolean().optional().describe('If true, returns the impact without making changes'),
+    confirm_phrase: z.string().optional().describe('Required for execution. Exact phrase: MERGE PROJECT <source> INTO <target>'),
   },
-  async ({ source, target }) => {
+  async ({ source, target, dry_run, confirm_phrase }) => {
     try {
       const client = await getClient();
+
+      const impact = await getProjectMergeImpact(client, source, target);
+      if (dry_run) {
+        return textResult(
+          [
+            `Dry run: project_merge`,
+            `  Source: ${impact.source}`,
+            `  Target: ${impact.target}`,
+            `  Blocked by active timer: ${impact.blocked_by_active_timer}`,
+            `  Sessions to move: ${impact.sessions_to_move}`,
+            `To execute, send confirm_phrase: "MERGE PROJECT ${impact.source} INTO ${impact.target}".`,
+          ].join('\n')
+        );
+      }
+
+      const gate = requireConfirmation(dry_run, confirm_phrase, `MERGE PROJECT ${impact.source} INTO ${impact.target}`);
+      if (!gate.allowed) {
+        return errorResult(gate.message ?? 'Confirmation required.');
+      }
+
       const result = await mergeProjects(client, source, target);
       return textResult(
         `Merged "${source}" into "${result.target.name}" (${result.sessionsMoved} session(s) moved).`
@@ -343,10 +400,38 @@ server.tool(
     session_id: positiveInteger.describe('Session ID to adjust'),
     start_time: z.string().optional().describe('New start time in local time (YYYY-MM-DDTHH:MM:SS)'),
     end_time: z.string().optional().describe('New end time in local time (YYYY-MM-DDTHH:MM:SS) — only valid for completed sessions'),
+    dry_run: z.boolean().optional().describe('If true, previews UTC conversion and resulting values without writing'),
+    confirm_phrase: z.string().optional().describe('Required for execution. Exact phrase: ADJUST SESSION <session_id>'),
   },
-  async ({ session_id, start_time, end_time }) => {
+  async ({ session_id, start_time, end_time, dry_run, confirm_phrase }) => {
     try {
       const client = await getClient();
+      const existing = await getSession(client, session_id);
+      if (!existing) {
+        return errorResult(`Session not found: ${session_id}`);
+      }
+
+      if (dry_run) {
+        const previewStartUtc = start_time ? localDateTimeToUtcDb(start_time) : existing.start_time;
+        const previewEndUtc = end_time ? localDateTimeToUtcDb(end_time) : existing.end_time;
+        return textResult(
+          [
+            `Dry run: session_adjust`,
+            `  Session: ${session_id}`,
+            `  Current start (local): ${utcDbToLocal(existing.start_time)}`,
+            `  Current end (local): ${existing.end_time ? utcDbToLocal(existing.end_time) : 'null'}`,
+            `  Proposed start (local): ${utcDbToLocal(previewStartUtc)}`,
+            `  Proposed end (local): ${previewEndUtc ? utcDbToLocal(previewEndUtc) : 'null'}`,
+            `To execute, send confirm_phrase: "ADJUST SESSION ${session_id}".`,
+          ].join('\n')
+        );
+      }
+
+      const gate = requireConfirmation(dry_run, confirm_phrase, `ADJUST SESSION ${session_id}`);
+      if (!gate.allowed) {
+        return errorResult(gate.message ?? 'Confirmation required.');
+      }
+
       const updated = await adjustSession(client, session_id, { start_time, end_time });
       const lines = [`Session #${updated.id} updated.`];
       lines.push(`  Start: ${utcDbToLocal(updated.start_time)}`);

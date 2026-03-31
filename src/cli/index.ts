@@ -66,7 +66,7 @@ function parsePositiveSessionIds(sessionIds: string[]): number[] {
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.1.5');
+  .version('1.1.6');
 
 // --- Setup ---
 

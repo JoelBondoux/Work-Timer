@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-03-31
+
+### Security
+
+- Added MCP safety gating for destructive tools: `project_delete`, `project_merge`, and `session_adjust` now support `dry_run` previews and require an exact `confirm_phrase` before mutation
+- Added dry-run impact previews for project deletion/merge, including active-timer and row-count visibility
+- Wrapped multi-step project delete and merge operations in explicit SQL transactions (`BEGIN IMMEDIATE` / `COMMIT` / `ROLLBACK`) to prevent partial state on failure
+- Added regression tests proving transactional rollback under simulated mid-operation failures and tests for MCP confirmation-gate behavior
+- Added dependency overrides to remediate known transitive vulnerabilities: `path-to-regexp` and `brace-expansion`
+
 ## [1.1.5] - 2026-03-31
 
 ### Added

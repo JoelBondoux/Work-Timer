@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Work-Timer exposes 16 MCP tools that any compatible AI assistant can call. This document describes each tool, its parameters, and example natural language prompts.
+Work-Timer exposes 19 MCP tools that any compatible AI assistant can call. This document describes each tool, its parameters, and example natural language prompts.
 
 ## How It Works
 
@@ -147,6 +147,32 @@ List all projects.
 - "Show me all my projects"
 - "List projects including archived ones"
 
+### `project_delete`
+
+Delete a project. Destructive operations now require a confirmation phrase.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | Yes | Project name to delete |
+| `force` | boolean | No | Required when the project has sessions |
+| `dry_run` | boolean | No | Preview impact without making changes |
+| `confirm_phrase` | string | No* | Required when `dry_run` is not true. Exact phrase: `DELETE PROJECT <name>` |
+
+### `project_merge`
+
+Move all sessions from source into target and delete source. Destructive operations require a confirmation phrase.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `source` | string | Yes | Project to merge from (deleted) |
+| `target` | string | Yes | Project to merge into (kept) |
+| `dry_run` | boolean | No | Preview impact without making changes |
+| `confirm_phrase` | string | No* | Required when `dry_run` is not true. Exact phrase: `MERGE PROJECT <source> INTO <target>` |
+
 ## Billing & Query Tools
 
 ### `time_query`
@@ -184,6 +210,22 @@ Calculate billing amounts with payment status filters.
 - "How much does Client Alpha owe me?"
 - "Show me all unpaid sessions"
 - "What haven't I invoiced yet?"
+
+## Session Tools
+
+### `session_adjust`
+
+Adjust session start/end times using local-time input. Mutation requires confirmation.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `session_id` | number | Yes | Session ID |
+| `start_time` | string | No | New local start (`YYYY-MM-DDTHH:MM:SS`) |
+| `end_time` | string | No | New local end (`YYYY-MM-DDTHH:MM:SS`) |
+| `dry_run` | boolean | No | Preview conversion/result without writing |
+| `confirm_phrase` | string | No* | Required when `dry_run` is not true. Exact phrase: `ADJUST SESSION <session_id>` |
 
 ## Invoice Tools
 
