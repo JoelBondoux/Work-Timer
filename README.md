@@ -7,6 +7,9 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
 - **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
 - **CLI** — Full command-line interface for quick manual use
+- **Safe destructive operations** — Confirmation flow in CLI and `dry_run` + `confirm_phrase` safety gates in MCP for destructive actions
+- **Session time correction** — Adjust start/end times in local time while storing UTC safely
+- **Local-time UX** — Displays and date filters are local-time aware while database storage remains UTC
 - **Overlapping timers** — Bill multiple clients simultaneously
 - **Flexible billing** — Per-project rates, currencies, and minimum billing blocks with global defaults
 - **Invoice tracking** — Mark sessions as invoiced and paid with reference numbers
@@ -48,6 +51,12 @@ Run the setup wizard:
 
 ```bash
 work-timer setup
+```
+
+Keep Work-Timer and the MCP server up to date from GitHub:
+
+```bash
+work-timer update
 ```
 
 Or set environment variables:
@@ -132,7 +141,7 @@ src/
     presets.ts      # Accounting software export presets
     format.ts       # Text formatting for output
   mcp/
-    server.ts       # MCP server with 16 tool definitions
+    server.ts       # MCP server with 20 tool definitions
   cli/
     index.ts        # CLI entry point with Commander.js
 ```

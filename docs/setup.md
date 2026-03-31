@@ -33,8 +33,19 @@ You can now run `work-timer` from any directory.
 
 ```bash
 work-timer --version
-# Should output: 1.1.1
+# Should output: 1.1.7 (or newer)
 ```
+
+### Update to Latest GitHub Version
+
+To update Work-Timer and its MCP server to the latest GitHub release:
+
+```bash
+work-timer update
+```
+
+This runs a global GitHub install and prints the MCP server path that was installed.
+If your MCP client uses a hardcoded path to `server.js`, update it to the path shown.
 
 ## Step 2: Create a Turso Database
 

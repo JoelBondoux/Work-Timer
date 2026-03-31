@@ -2,6 +2,21 @@
 
 Complete reference for all Work-Timer CLI commands.
 
+## Maintenance Commands
+
+### `work-timer update`
+
+Update Work-Timer (including the MCP server) to the latest version from GitHub.
+
+```bash
+work-timer update
+```
+
+Behavior:
+- Runs `npm install -g github:JoelBondoux/Work-Timer`
+- Prints the globally installed MCP server path (`.../work-timer/dist/mcp/server.js`)
+- Useful when your MCP client points to a hardcoded server path and you want the newest release quickly
+
 ## Timer Commands
 
 ### `work-timer start <project>`

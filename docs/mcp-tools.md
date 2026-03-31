@@ -1,10 +1,12 @@
 # MCP Tools Reference
 
-Work-Timer exposes 19 MCP tools that any compatible AI assistant can call. This document describes each tool, its parameters, and example natural language prompts.
+Work-Timer exposes 20 MCP tools that any compatible AI assistant can call. This document describes each tool, its parameters, and example natural language prompts.
 
 ## How It Works
 
 When you add Work-Timer as an MCP server to your AI assistant (Claude Desktop, ChatGPT, GitHub Copilot, Cursor, etc.), the assistant can call these tools on your behalf. You simply speak naturally, and the assistant maps your intent to the right tool.
+
+Destructive tools (`project_delete`, `project_merge`, `session_adjust`) support `dry_run` previews and require an exact `confirm_phrase` for execution.
 
 ## Timer Tools
 
