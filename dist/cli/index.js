@@ -107,7 +107,7 @@ function ensureWindowsNpmBinOnPath() {
 program
     .name('work-timer')
     .description('Zero-cost work timer and billing tool for solo contractors')
-    .version('1.3.4');
+    .version('1.3.5');
 program
     .command('update')
     .description('Update Work-Timer (including MCP server) to the latest version from GitHub')
@@ -118,8 +118,12 @@ program
             console.log(`Added npm global bin to user PATH: ${pathFix.npmBin}`);
             console.log('Open a new terminal after this command to use updated PATH in new sessions.');
         }
-        console.log('Updating Work-Timer from GitHub...');
-        const install = runNpm(['install', '-g', 'github:JoelBondoux/Work-Timer']);
+        console.log('Updating Work-Timer from GitHub tarball...');
+        const install = runNpm([
+            'install',
+            '-g',
+            'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master',
+        ]);
         if (install.status !== 0) {
             const details = [install.stderr.trim(), install.stdout.trim()].filter(Boolean).join('\n');
             throw new Error(details || 'npm install failed');
