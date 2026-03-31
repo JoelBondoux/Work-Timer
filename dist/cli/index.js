@@ -11,7 +11,7 @@ import { listPresetIds } from '../core/presets.js';
 import { formatRunningTimers, formatBillingRecords, formatProjectTotals, formatProject, formatProjectList, formatDuration, } from '../core/format.js';
 import { utcDbToLocal } from '../core/time.js';
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
@@ -27,7 +27,7 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.6';
+const CLI_VERSION = '1.3.7';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -55,15 +55,34 @@ function parsePositiveSessionIds(sessionIds) {
     });
 }
 function runNpm(args) {
-    const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    const result = spawnSync(npmBin, args, {
+    const spawnOptions = {
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    };
+    const primaryNpm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const primary = spawnSync(primaryNpm, args, spawnOptions);
+    const primaryError = primary.error;
+    if (primary.status !== null || primaryError?.code !== 'ENOENT') {
+        return {
+            status: primary.status,
+            stderr: primary.stderr ?? '',
+            stdout: primary.stdout ?? '',
+        };
+    }
+    const nodeDir = dirname(process.execPath);
+    const bundledNpmCli = join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    if (existsSync(bundledNpmCli)) {
+        const fallback = spawnSync(process.execPath, [bundledNpmCli, ...args], spawnOptions);
+        return {
+            status: fallback.status,
+            stderr: fallback.stderr ?? '',
+            stdout: fallback.stdout ?? '',
+        };
+    }
     return {
-        status: result.status,
-        stderr: result.stderr ?? '',
-        stdout: result.stdout ?? '',
+        status: 1,
+        stderr: primaryError?.message ?? 'npm executable not found',
+        stdout: '',
     };
 }
 function getNpmGlobalPrefix() {

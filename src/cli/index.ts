@@ -20,11 +20,12 @@ import {
 import { utcDbToLocal } from '../core/time.js';
 import type { SettingKey } from '../types.js';
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { spawnSync } from 'node:child_process';
+import type { SpawnSyncOptionsWithStringEncoding } from 'node:child_process';
 import { get } from 'node:https';
 
 function prompt(question: string): Promise<string> {
@@ -38,7 +39,7 @@ function prompt(question: string): Promise<string> {
 }
 
 const program = new Command();
-const CLI_VERSION = '1.3.6';
+const CLI_VERSION = '1.3.7';
 const GITHUB_TARBALL_URL =
   'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL =
@@ -77,15 +78,37 @@ function parsePositiveSessionIds(sessionIds: string[]): number[] {
 }
 
 function runNpm(args: string[]): { status: number | null; stderr: string; stdout: string } {
-  const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(npmBin, args, {
+  const spawnOptions: SpawnSyncOptionsWithStringEncoding = {
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  };
+
+  const primaryNpm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const primary = spawnSync(primaryNpm, args, spawnOptions);
+  const primaryError = primary.error as NodeJS.ErrnoException | undefined;
+  if (primary.status !== null || primaryError?.code !== 'ENOENT') {
+    return {
+      status: primary.status,
+      stderr: primary.stderr ?? '',
+      stdout: primary.stdout ?? '',
+    };
+  }
+
+  const nodeDir = dirname(process.execPath);
+  const bundledNpmCli = join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  if (existsSync(bundledNpmCli)) {
+    const fallback = spawnSync(process.execPath, [bundledNpmCli, ...args], spawnOptions);
+    return {
+      status: fallback.status,
+      stderr: fallback.stderr ?? '',
+      stdout: fallback.stdout ?? '',
+    };
+  }
+
   return {
-    status: result.status,
-    stderr: result.stderr ?? '',
-    stdout: result.stdout ?? '',
+    status: 1,
+    stderr: primaryError?.message ?? 'npm executable not found',
+    stdout: '',
   };
 }
 

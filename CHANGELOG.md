@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] - 2026-03-31
+
+### Fixed
+
+- `work-timer update` now falls back to invoking npm via Node's bundled `npm-cli.js` when `npm`/`npm.cmd` cannot be resolved on PATH
+- Fixes failures like `Update failed: npm prefix failed` in environments where the global shim can run but npm command resolution is inconsistent
+
 ## [1.3.6] - 2026-03-31
 
 ### Added

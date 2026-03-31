@@ -61,7 +61,7 @@ Keep Work-Timer and the MCP server up to date from GitHub:
 work-timer update
 ```
 
-If you need to bootstrap a broken older install manually, use the same tarball install path as `work-timer update`:
+If you need to bootstrap a broken older install manually, use the same tarball install path as `work-timer update`: (this also helps when `npm` PATH resolution is inconsistent in older global installs)
 
 ```bash
 npm install -g https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master
