@@ -14,6 +14,7 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 - **Flexible billing** — Per-project rates, currencies, and minimum billing blocks with global defaults
 - **Invoice tracking** — Mark sessions as invoiced and paid with reference numbers
 - **Export** — CSV, Excel (XLSX), and accounting-specific presets (QuickBooks, Xero, FreshBooks, Sage, MYOB)
+- **Modern XLSX export** — Excel exports use a smaller maintained writer dependency instead of the older `exceljs` stack
 - **Cloud sync** — Turso database means your data is accessible from any device
 - **Free** — Turso free tier (9GB, 500M reads/mo) is more than enough for any solo practice
 

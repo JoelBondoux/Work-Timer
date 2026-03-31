@@ -1,7 +1,7 @@
 import type { Client } from '@libsql/client';
 import { getBillingSummary, type BillingQueryFilters } from './billing.js';
 import type { BillingRecord } from '../types.js';
-import ExcelJS from 'exceljs';
+import writeXlsxFile, { type Cell } from 'write-excel-file/node';
 import { getPreset, type PresetOptions } from './presets.js';
 
 const DANGEROUS_SPREADSHEET_PREFIXES = new Set(['=', '+', '-', '@']);
@@ -96,84 +96,81 @@ export async function exportXlsx(
 ): Promise<Buffer> {
   const summary = await getBillingSummary(client, filters);
 
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Work-Timer';
-  workbook.created = new Date();
+  const headerStyle = {
+    fontWeight: 'bold' as const,
+    textColor: '#FFFFFF',
+    backgroundColor: '#4472C4',
+  };
 
-  const sheet = workbook.addWorksheet('Billing');
+  const boldStyle = {
+    fontWeight: 'bold' as const,
+  };
 
-  // Define columns with formatting
-  sheet.columns = [
-    { header: 'Project', key: 'project', width: 25 },
-    { header: 'Date', key: 'date', width: 12 },
-    { header: 'Start', key: 'start', width: 20 },
-    { header: 'End', key: 'end', width: 20 },
-    { header: 'Duration (h)', key: 'duration', width: 14 },
-    { header: 'Billed (h)', key: 'billed', width: 12 },
-    { header: 'Rate', key: 'rate', width: 10 },
-    { header: 'Currency', key: 'currency', width: 10 },
-    { header: 'Amount', key: 'amount', width: 12 },
-    { header: 'Invoice Status', key: 'invoiceStatus', width: 15 },
-    { header: 'Invoice Ref', key: 'invoiceRef', width: 15 },
-    { header: 'Payment Status', key: 'paymentStatus', width: 15 },
-    { header: 'Notes', key: 'notes', width: 30 },
+  const numericFormat = '#,##0.00';
+  const hourFormat = '0.00';
+
+  const columns = [
+    { width: 25 },
+    { width: 12 },
+    { width: 20 },
+    { width: 20 },
+    { width: 14 },
+    { width: 12 },
+    { width: 10 },
+    { width: 10 },
+    { width: 12 },
+    { width: 15 },
+    { width: 15 },
+    { width: 15 },
+    { width: 30 },
   ];
 
-  // Style header row
-  const headerRow = sheet.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF4472C4' },
-  };
-  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  const data: Cell[][] = [
+    CSV_HEADERS.map((header) => ({ value: header, ...headerStyle })),
+  ];
 
-  // Add data rows
   for (const record of summary.records) {
-    sheet.addRow({
-      project: sanitizeSpreadsheetCell(record.project_name),
-      date: record.date,
-      start: record.start_time,
-      end: record.end_time,
-      duration: Math.round((record.raw_duration_minutes / 60) * 100) / 100,
-      billed: Math.round((record.billed_duration_minutes / 60) * 100) / 100,
-      rate: record.rate,
-      currency: record.currency,
-      amount: record.amount,
-      invoiceStatus: record.invoiced ? 'Invoiced' : 'Not Invoiced',
-      invoiceRef: sanitizeSpreadsheetCell(record.invoice_ref ?? ''),
-      paymentStatus: record.paid ? 'Paid' : 'Unpaid',
-      notes: sanitizeSpreadsheetCell(record.notes ?? ''),
-    });
+    data.push([
+      { value: sanitizeSpreadsheetCell(record.project_name) },
+      { value: record.date },
+      { value: record.start_time },
+      { value: record.end_time },
+      { value: Math.round((record.raw_duration_minutes / 60) * 100) / 100, type: Number, format: hourFormat },
+      { value: Math.round((record.billed_duration_minutes / 60) * 100) / 100, type: Number, format: hourFormat },
+      { value: record.rate, type: Number, format: numericFormat },
+      { value: record.currency },
+      { value: record.amount, type: Number, format: numericFormat },
+      { value: record.invoiced ? 'Invoiced' : 'Not Invoiced' },
+      { value: sanitizeSpreadsheetCell(record.invoice_ref ?? '') },
+      { value: record.paid ? 'Paid' : 'Unpaid' },
+      { value: sanitizeSpreadsheetCell(record.notes ?? '') },
+    ]);
   }
 
-  // Format number columns
-  sheet.getColumn('duration').numFmt = '0.00';
-  sheet.getColumn('billed').numFmt = '0.00';
-  sheet.getColumn('rate').numFmt = '#,##0.00';
-  sheet.getColumn('amount').numFmt = '#,##0.00';
-
-  // Add totals per project if there are records
   if (summary.records.length > 0) {
-    sheet.addRow({}); // blank row
-
-    const totalsHeaderRow = sheet.addRow({
-      project: 'TOTALS BY PROJECT',
-    });
-    totalsHeaderRow.font = { bold: true };
+    data.push(new Array(CSV_HEADERS.length).fill(null));
+    data.push([{ value: 'TOTALS BY PROJECT', ...boldStyle }]);
 
     for (const [, total] of summary.totals_by_project) {
-      sheet.addRow({
-        project: sanitizeSpreadsheetCell(total.project_name),
-        duration: Math.round((total.total_raw_minutes / 60) * 100) / 100,
-        billed: Math.round((total.total_billed_minutes / 60) * 100) / 100,
-        currency: total.currency,
-        amount: total.total_amount,
-      });
+      data.push([
+        { value: sanitizeSpreadsheetCell(total.project_name) },
+        null,
+        null,
+        null,
+        { value: Math.round((total.total_raw_minutes / 60) * 100) / 100, type: Number, format: hourFormat },
+        { value: Math.round((total.total_billed_minutes / 60) * 100) / 100, type: Number, format: hourFormat },
+        null,
+        { value: total.currency },
+        { value: total.total_amount, type: Number, format: numericFormat },
+      ]);
     }
   }
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  return Buffer.from(buffer);
+  return await writeXlsxFile(data, {
+    sheet: 'Billing',
+    columns,
+    buffer: true,
+    fontFamily: 'Calibri',
+    fontSize: 11,
+  });
 }

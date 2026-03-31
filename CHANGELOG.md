@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-31
+
+### Changed
+
+- Replaced `exceljs` with `write-excel-file` for XLSX export generation
+- XLSX export remains formatted and includes the same billing columns plus totals-by-project, but now uses a smaller and more modern dependency tree
+
+### Security
+
+- Removed the `exceljs` dependency chain that produced deprecated transitive packages such as `inflight`, `glob@7`, `lodash.isequal`, `fstream`, and `rimraf@2`
+- After the replacement, the remaining install-time deprecation warning is limited to `node-domexception`, which comes from `@libsql/client`'s upstream fetch stack
+
 ## [1.2.2] - 2026-03-31
 
 ### Added

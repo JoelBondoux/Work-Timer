@@ -19,7 +19,7 @@ Security note: values that look like spreadsheet formulas are exported as litera
 
 ### Excel (XLSX)
 
-Formatted Excel workbook with styled headers, number formatting, and auto-calculated totals by project.
+Formatted Excel workbook with styled headers, number formatting, and totals by project, generated with a modern maintained XLSX writer.
 
 ```bash
 work-timer export --format xlsx --output billing.xlsx
@@ -29,7 +29,7 @@ work-timer export --format xlsx --output q1-billing.xlsx --from 2026-01-01 --to 
 The XLSX export includes:
 - Bold, colored header row
 - Number columns formatted to 2 decimal places
-- Currency and amount columns properly formatted
+- Rate, billed duration, and amount columns properly formatted
 - A totals-by-project section at the bottom
 
 ## Column Reference
