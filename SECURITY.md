@@ -18,7 +18,7 @@ If you discover a security vulnerability in Work-Timer, please report it respons
 ### What to Expect
 
 - Your report will be reviewed privately
-- We will acknowledge receipt within 48 hours
+- We will acknowledge receipt within 5 working days
 - We will work on a fix and coordinate a disclosure timeline with you
 - You will be credited in the security advisory (unless you prefer anonymity)
 
