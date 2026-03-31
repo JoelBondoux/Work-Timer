@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6] - 2026-03-31
+
+### Added
+
+- New `work-timer uninstall` CLI command with confirmation prompt (`--yes` to skip)
+- Automatic update announcements in CLI usage: checks GitHub daily and, when newer builds exist, offers an interactive `Update now?` prompt
+
+### Changed
+
+- Refactored updater flow into shared logic so both `work-timer update` and the update prompt use the same install path and messaging
+
 ## [1.3.5] - 2026-03-31
 
 ### Fixed

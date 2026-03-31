@@ -19,6 +19,25 @@ Behavior:
 - Shows full npm output when update fails (instead of a generic error)
 - Useful when your MCP client points to a hardcoded server path and you want the newest release quickly
 
+Update notifications:
+- Most interactive CLI commands check daily for newer GitHub builds
+- If a newer version exists, CLI announces it and asks `Update now? [y/N]`
+- Set `WORK_TIMER_DISABLE_UPDATE_CHECK=1` to disable this behavior
+
+### `work-timer uninstall`
+
+Uninstall Work-Timer from the global npm location.
+
+```bash
+work-timer uninstall
+work-timer uninstall --yes
+```
+
+Behavior:
+- Runs `npm uninstall -g work-timer`
+- Prompts for confirmation unless `--yes` is passed
+- If your current terminal still resolves `work-timer` after uninstall, open a new terminal session
+
 ## Timer Commands
 
 ### `work-timer start <project>`

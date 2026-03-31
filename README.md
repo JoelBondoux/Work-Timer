@@ -7,6 +7,7 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
 - **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
 - **CLI** — Full command-line interface for quick manual use
+- **Built-in maintenance** — Includes `work-timer update`, `work-timer uninstall`, and update-available prompts
 - **Safe destructive operations** — Confirmation flow in CLI and `dry_run` + `confirm_phrase` safety gates in MCP for destructive actions
 - **Session time correction** — Adjust start/end times in local time while storing UTC safely
 - **Local-time UX** — Displays and date filters are local-time aware while database storage remains UTC

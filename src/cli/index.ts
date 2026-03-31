@@ -19,12 +19,13 @@ import {
 } from '../core/format.js';
 import { utcDbToLocal } from '../core/time.js';
 import type { SettingKey } from '../types.js';
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { spawnSync } from 'node:child_process';
+import { get } from 'node:https';
 
 function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -37,6 +38,17 @@ function prompt(question: string): Promise<string> {
 }
 
 const program = new Command();
+const CLI_VERSION = '1.3.6';
+const GITHUB_TARBALL_URL =
+  'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
+const GITHUB_PACKAGE_JSON_URL =
+  'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+type UpdateCheckCache = {
+  lastCheckedAt?: string;
+  latestVersion?: string;
+};
 
 function parseNonNegativeNumber(value: string, label: string): number {
   const parsed = Number(value);
@@ -128,46 +140,202 @@ function ensureWindowsNpmBinOnPath(): { npmBin: string; addedToUserPath: boolean
   return { npmBin, addedToUserPath: outcome === 'ADDED' };
 }
 
+function getUpdateCheckCachePath(): string {
+  return join(homedir(), '.work-timer', 'update-check.json');
+}
+
+function parseSemver(version: string): [number, number, number] | null {
+  const match = version.trim().match(/^v?(\d+)\.(\d+)\.(\d+)/);
+  if (!match) return null;
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function isVersionNewer(latest: string, current: string): boolean {
+  const l = parseSemver(latest);
+  const c = parseSemver(current);
+  if (!l || !c) return false;
+  if (l[0] !== c[0]) return l[0] > c[0];
+  if (l[1] !== c[1]) return l[1] > c[1];
+  return l[2] > c[2];
+}
+
+function readUpdateCheckCache(): UpdateCheckCache {
+  try {
+    const cachePath = getUpdateCheckCachePath();
+    if (!existsSync(cachePath)) return {};
+    return JSON.parse(readFileSync(cachePath, 'utf-8')) as UpdateCheckCache;
+  } catch {
+    return {};
+  }
+}
+
+function writeUpdateCheckCache(cache: UpdateCheckCache): void {
+  const configDir = join(homedir(), '.work-timer');
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true, mode: 0o700 });
+  }
+  const cachePath = getUpdateCheckCachePath();
+  writeFileSync(cachePath, JSON.stringify(cache, null, 2), { mode: 0o600 });
+}
+
+function fetchText(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = get(url, (res) => {
+      const status = res.statusCode ?? 0;
+      if (status < 200 || status >= 300) {
+        reject(new Error(`HTTP ${status} from ${url}`));
+        res.resume();
+        return;
+      }
+
+      let data = '';
+      res.setEncoding('utf-8');
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => resolve(data));
+    });
+
+    req.on('error', reject);
+    req.setTimeout(5000, () => {
+      req.destroy(new Error('Request timed out'));
+    });
+  });
+}
+
+async function fetchLatestVersionFromGitHub(): Promise<string | null> {
+  try {
+    const body = await fetchText(GITHUB_PACKAGE_JSON_URL);
+    const pkg = JSON.parse(body) as { version?: string };
+    return typeof pkg.version === 'string' ? pkg.version : null;
+  } catch {
+    return null;
+  }
+}
+
+function shouldSkipUpdateAnnouncement(argv: string[]): boolean {
+  if (argv.includes('--help') || argv.includes('-h') || argv.includes('--version') || argv.includes('-V')) {
+    return true;
+  }
+  const firstArg = argv.find((arg) => !arg.startsWith('-'));
+  if (!firstArg) return true;
+  return firstArg === 'update' || firstArg === 'uninstall';
+}
+
+function performGlobalUpdate(): string {
+  const pathFix = ensureWindowsNpmBinOnPath();
+  if (pathFix?.addedToUserPath) {
+    console.log(`Added npm global bin to user PATH: ${pathFix.npmBin}`);
+    console.log('Open a new terminal after this command to use updated PATH in new sessions.');
+  }
+
+  console.log('Updating Work-Timer from GitHub tarball...');
+  const install = runNpm(['install', '-g', GITHUB_TARBALL_URL]);
+  if (install.status !== 0) {
+    const details = [install.stderr.trim(), install.stdout.trim()].filter(Boolean).join('\n');
+    throw new Error(details || 'npm install failed');
+  }
+
+  const root = runNpm(['root', '-g']);
+  if (root.status !== 0) {
+    throw new Error(root.stderr.trim() || 'npm root failed');
+  }
+
+  const globalRoot = root.stdout.trim().split(/\r?\n/).pop() ?? root.stdout.trim();
+  return join(globalRoot, 'work-timer', 'dist', 'mcp', 'server.js');
+}
+
+async function maybeAnnounceUpdate(argv: string[]): Promise<void> {
+  if (process.env.WORK_TIMER_DISABLE_UPDATE_CHECK === '1') return;
+  if (process.env.CI === 'true') return;
+  if (shouldSkipUpdateAnnouncement(argv)) return;
+
+  const cache = readUpdateCheckCache();
+  const now = Date.now();
+  const lastChecked = cache.lastCheckedAt ? Date.parse(cache.lastCheckedAt) : 0;
+  const shouldRefresh = !lastChecked || Number.isNaN(lastChecked) || now - lastChecked > UPDATE_CHECK_INTERVAL_MS;
+
+  let latestVersion = cache.latestVersion;
+  if (shouldRefresh) {
+    const fetchedVersion = await fetchLatestVersionFromGitHub();
+    latestVersion = fetchedVersion ?? cache.latestVersion;
+    writeUpdateCheckCache({
+      lastCheckedAt: new Date(now).toISOString(),
+      latestVersion,
+    });
+  }
+
+  if (!latestVersion || !isVersionNewer(latestVersion, CLI_VERSION)) {
+    return;
+  }
+
+  console.log(`A new Work-Timer build is available: ${latestVersion} (current: ${CLI_VERSION}).`);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    console.log('Run `work-timer update` to install it.');
+    return;
+  }
+
+  const answer = await prompt('Update now? [y/N]: ');
+  if (!/^y(es)?$/i.test(answer.trim())) {
+    console.log('Skipped update. You can run `work-timer update` at any time.');
+    return;
+  }
+
+  try {
+    const mcpPath = performGlobalUpdate();
+    console.log('Update complete.');
+    console.log(`MCP server path: ${mcpPath}`);
+    console.log('If your MCP client uses a hardcoded path, update it to this location.');
+  } catch (e) {
+    console.error(`Update failed: ${(e as Error).message}`);
+  }
+}
+
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.3.5');
+  .version(CLI_VERSION);
 
 program
   .command('update')
   .description('Update Work-Timer (including MCP server) to the latest version from GitHub')
   .action(() => {
     try {
-      const pathFix = ensureWindowsNpmBinOnPath();
-      if (pathFix?.addedToUserPath) {
-        console.log(`Added npm global bin to user PATH: ${pathFix.npmBin}`);
-        console.log('Open a new terminal after this command to use updated PATH in new sessions.');
-      }
-
-      console.log('Updating Work-Timer from GitHub tarball...');
-      const install = runNpm([
-        'install',
-        '-g',
-        'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master',
-      ]);
-      if (install.status !== 0) {
-        const details = [install.stderr.trim(), install.stdout.trim()].filter(Boolean).join('\n');
-        throw new Error(details || 'npm install failed');
-      }
-
-      const root = runNpm(['root', '-g']);
-      if (root.status !== 0) {
-        throw new Error(root.stderr.trim() || 'npm root failed');
-      }
-
-      const globalRoot = root.stdout.trim().split(/\r?\n/).pop() ?? root.stdout.trim();
-      const mcpPath = join(globalRoot, 'work-timer', 'dist', 'mcp', 'server.js');
+      const mcpPath = performGlobalUpdate();
 
       console.log('Update complete.');
       console.log(`MCP server path: ${mcpPath}`);
       console.log('If your MCP client uses a hardcoded path, update it to this location.');
     } catch (e) {
       console.error(`Update failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('uninstall')
+  .description('Uninstall Work-Timer from the global npm location')
+  .option('--yes', 'Skip confirmation prompt')
+  .action(async (opts: { yes?: boolean }) => {
+    try {
+      if (!opts.yes && process.stdin.isTTY && process.stdout.isTTY) {
+        const answer = await prompt('Uninstall Work-Timer globally? [y/N]: ');
+        if (!/^y(es)?$/i.test(answer.trim())) {
+          console.log('Aborted.');
+          return;
+        }
+      }
+
+      const uninstall = runNpm(['uninstall', '-g', 'work-timer']);
+      if (uninstall.status !== 0) {
+        const details = [uninstall.stderr.trim(), uninstall.stdout.trim()].filter(Boolean).join('\n');
+        throw new Error(details || 'npm uninstall failed');
+      }
+
+      console.log('Work-Timer has been uninstalled from global npm packages.');
+      console.log('If this terminal still resolves `work-timer`, open a new terminal session.');
+    } catch (e) {
+      console.error(`Uninstall failed: ${(e as Error).message}`);
       process.exit(1);
     }
   });
@@ -688,4 +856,10 @@ configCmd
     }
   });
 
-program.parse();
+(async () => {
+  await maybeAnnounceUpdate(process.argv.slice(2));
+  await program.parseAsync(process.argv);
+})().catch((e) => {
+  console.error((e as Error).message);
+  process.exit(1);
+});
