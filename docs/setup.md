@@ -33,7 +33,7 @@ You can now run `work-timer` from any directory.
 
 ```bash
 work-timer --version
-# Should output: 1.3.4 (or newer)
+# Should output: 1.3.5 (or newer)
 ```
 
 ### Update to Latest GitHub Version
@@ -44,17 +44,17 @@ To update Work-Timer and its MCP server to the latest GitHub release:
 work-timer update
 ```
 
-This runs a global GitHub install and prints the MCP server path that was installed.
+This runs a global GitHub tarball install and prints the MCP server path that was installed.
 On Windows, it also adds npm's global bin directory to your user PATH when missing.
 If your MCP client uses a hardcoded path to `server.js`, update it to the path shown.
 
 If you're recovering from an older broken global install, you can also reinstall directly:
 
 ```bash
-npm install -g github:JoelBondoux/Work-Timer#master
+npm install -g https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master
 ```
 
-GitHub installs now run the package `prepare` step, so the CLI and MCP `dist` files are built before npm links the `work-timer` command.
+Using the tarball URL avoids npm's `github:` git-dependency preparation path and is more reliable on Windows global installs.
 
 ## Step 2: Create a Turso Database
 

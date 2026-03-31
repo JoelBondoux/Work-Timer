@@ -60,10 +60,10 @@ Keep Work-Timer and the MCP server up to date from GitHub:
 work-timer update
 ```
 
-If you need to bootstrap a broken older install manually, a direct GitHub install now builds during install:
+If you need to bootstrap a broken older install manually, use the same tarball install path as `work-timer update`:
 
 ```bash
-npm install -g github:JoelBondoux/Work-Timer#master
+npm install -g https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master
 ```
 
 Or set environment variables:

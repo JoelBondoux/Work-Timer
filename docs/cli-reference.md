@@ -13,7 +13,7 @@ work-timer update
 ```
 
 Behavior:
-- Runs `npm install -g github:JoelBondoux/Work-Timer`
+- Runs `npm install -g https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master`
 - On Windows, auto-adds npm global bin (from `npm prefix -g`) to user PATH when missing
 - Prints the globally installed MCP server path (`.../work-timer/dist/mcp/server.js`)
 - Shows full npm output when update fails (instead of a generic error)

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-03-31
+
+### Fixed
+
+- `work-timer update` now installs from the GitHub tarball URL instead of npm's `github:` git dependency transport
+- Avoids Windows `git dep preparation failed` and long `npm warn tar TAR_ENTRY_ERROR` cascades caused by partial git-dependency cleanup in global installs
+- Manual recovery/install path is now the same tarball command used by the updater
+
 ## [1.3.4] - 2026-03-31
 
 ### Fixed
