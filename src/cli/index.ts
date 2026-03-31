@@ -80,7 +80,7 @@ function runNpm(args: string[]): { status: number | null; stderr: string; stdout
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.2.0');
+  .version('1.2.1');
 
 program
   .command('update')
@@ -465,8 +465,10 @@ program
 
 // --- Session commands ---
 
-program
-  .command('session adjust <session-id>')
+const sessionCmd = program.command('session').description('Manage sessions');
+
+sessionCmd
+  .command('adjust <session-id>')
   .description('Adjust the start and/or end time of a session. Times must be in local time (YYYY-MM-DDTHH:MM:SS).')
   .option('--start <datetime>', 'New start time in local time (YYYY-MM-DDTHH:MM:SS)')
   .option('--end <datetime>', 'New end time in local time (YYYY-MM-DDTHH:MM:SS)')
