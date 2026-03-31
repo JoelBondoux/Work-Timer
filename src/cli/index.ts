@@ -39,7 +39,7 @@ function prompt(question: string): Promise<string> {
 }
 
 const program = new Command();
-const CLI_VERSION = '1.3.7';
+const CLI_VERSION = '1.3.8';
 const GITHUB_TARBALL_URL =
   'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL =
@@ -81,12 +81,16 @@ function runNpm(args: string[]): { status: number | null; stderr: string; stdout
   const spawnOptions: SpawnSyncOptionsWithStringEncoding = {
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    env: process.env,
   };
 
+  // On Windows, try npm.cmd first, but fall back to bundled npm-cli.js if it fails
   const primaryNpm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const primary = spawnSync(primaryNpm, args, spawnOptions);
   const primaryError = primary.error as NodeJS.ErrnoException | undefined;
-  if (primary.status !== null || primaryError?.code !== 'ENOENT') {
+  
+  // If it succeeded (status is not null), return immediately
+  if (primary.status !== null) {
     return {
       status: primary.status,
       stderr: primary.stderr ?? '',
@@ -94,15 +98,18 @@ function runNpm(args: string[]): { status: number | null; stderr: string; stdout
     };
   }
 
-  const nodeDir = dirname(process.execPath);
-  const bundledNpmCli = join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
-  if (existsSync(bundledNpmCli)) {
-    const fallback = spawnSync(process.execPath, [bundledNpmCli, ...args], spawnOptions);
-    return {
-      status: fallback.status,
-      stderr: fallback.stderr ?? '',
-      stdout: fallback.stdout ?? '',
-    };
+  // If it failed with ENOENT or EINVAL, try the fallback bundled npm-cli.js
+  if (primaryError?.code === 'ENOENT' || primaryError?.code === 'EINVAL') {
+    const nodeDir = dirname(process.execPath);
+    const bundledNpmCli = join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    if (existsSync(bundledNpmCli)) {
+      const fallback = spawnSync(process.execPath, [bundledNpmCli, ...args], spawnOptions);
+      return {
+        status: fallback.status,
+        stderr: fallback.stderr ?? '',
+        stdout: fallback.stdout ?? '',
+      };
+    }
   }
 
   return {
@@ -115,9 +122,15 @@ function runNpm(args: string[]): { status: number | null; stderr: string; stdout
 function getNpmGlobalPrefix(): string {
   const prefixResult = runNpm(['prefix', '-g']);
   if (prefixResult.status !== 0) {
-    throw new Error(prefixResult.stderr.trim() || 'npm prefix failed');
+    throw new Error(
+      `npm prefix -g failed with status ${prefixResult.status}. stderr=[${prefixResult.stderr}] stdout=[${prefixResult.stdout}]`
+    );
   }
-  return prefixResult.stdout.trim().split(/\r?\n/).pop() ?? prefixResult.stdout.trim();
+  const output = prefixResult.stdout.trim().split(/\r?\n/).pop() ?? prefixResult.stdout.trim();
+  if (!output) {
+    throw new Error('npm prefix returned empty output');
+  }
+  return output;
 }
 
 function ensureWindowsNpmBinOnPath(): { npmBin: string; addedToUserPath: boolean } | null {

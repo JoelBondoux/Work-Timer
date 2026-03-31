@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.8] - 2026-03-31
+
+### Fixed
+- Fixed `work-timer update` command hanging on Windows with npm.cmd spawn error (EINVAL). The npm invocation now properly falls back to bundled npm-cli.js when npm.cmd fails with stdio piping.
+- Improved error messages in `getNpmGlobalPrefix()` to include exit codes and output details for debugging.
+- Added `environment: process.env` to spawnSync options to ensure environment variables are properly inherited.
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
