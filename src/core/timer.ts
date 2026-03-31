@@ -1,6 +1,7 @@
 import type { Client } from '@libsql/client';
 import type { Session, RunningTimer } from '../types.js';
 import { getOrCreateProject } from './projects.js';
+import { utcDbToLocal } from './time.js';
 
 function rowToSession(row: Record<string, unknown>): Session {
   return {
@@ -35,7 +36,7 @@ export async function startTimer(
   if (existing.rows.length > 0) {
     const s = rowToSession(existing.rows[0] as unknown as Record<string, unknown>);
     throw new Error(
-      `Project "${project.name}" already has a ${s.status} timer (session #${s.id}, started ${s.start_time})`
+      `Project "${project.name}" already has a ${s.status} timer (session #${s.id}, started ${utcDbToLocal(s.start_time)})`
     );
   }
 

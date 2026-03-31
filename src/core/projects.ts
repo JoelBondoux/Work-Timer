@@ -150,3 +150,152 @@ export async function listProjects(client: Client, includeArchived = false): Pro
   const result = await client.execute(sql);
   return result.rows.map((row) => rowToProject(row as unknown as Record<string, unknown>));
 }
+
+function normalizeForComparison(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '');
+}
+
+function bigramSimilarity(a: string, b: string): number {
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+
+  const getBigrams = (s: string): Map<string, number> => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) {
+      const bg = s.slice(i, i + 2);
+      map.set(bg, (map.get(bg) ?? 0) + 1);
+    }
+    return map;
+  };
+
+  const bigramsA = getBigrams(a);
+  const bigramsB = getBigrams(b);
+  let intersection = 0;
+  for (const [bg, count] of bigramsA) {
+    intersection += Math.min(count, bigramsB.get(bg) ?? 0);
+  }
+  return (2 * intersection) / (a.length - 1 + b.length - 1);
+}
+
+export async function renameProject(
+  client: Client,
+  oldName: string,
+  newName: string,
+): Promise<Project> {
+  const project = await getProjectByName(client, oldName);
+  if (!project) throw new Error(`Project not found: "${oldName}"`);
+
+  const conflict = await getProjectByName(client, newName);
+  if (conflict) throw new Error(`A project named "${newName}" already exists.`);
+
+  await client.execute({
+    sql: 'UPDATE projects SET name = ? WHERE id = ?',
+    args: [newName, project.id],
+  });
+
+  const updated = await getProjectById(client, project.id);
+  if (!updated) throw new Error('Failed to rename project');
+  return updated;
+}
+
+export async function deleteProject(
+  client: Client,
+  name: string,
+  opts?: { force?: boolean },
+): Promise<void> {
+  const project = await getProjectByName(client, name);
+  if (!project) throw new Error(`Project not found: "${name}"`);
+
+  const active = await client.execute({
+    sql: `SELECT id FROM sessions WHERE project_id = ? AND status IN ('running', 'paused')`,
+    args: [project.id],
+  });
+  if (active.rows.length > 0) {
+    throw new Error(`Cannot delete "${name}": it has a running or paused timer. Stop it first.`);
+  }
+
+  const sessions = await client.execute({
+    sql: 'SELECT id FROM sessions WHERE project_id = ?',
+    args: [project.id],
+  });
+
+  if (sessions.rows.length > 0 && !opts?.force) {
+    throw new Error(
+      `Project "${name}" has ${sessions.rows.length} session(s). Use --force to permanently delete it and all its sessions.`
+    );
+  }
+
+  if (sessions.rows.length > 0) {
+    await client.execute({
+      sql: 'DELETE FROM pauses WHERE session_id IN (SELECT id FROM sessions WHERE project_id = ?)',
+      args: [project.id],
+    });
+    await client.execute({
+      sql: 'DELETE FROM sessions WHERE project_id = ?',
+      args: [project.id],
+    });
+  }
+
+  await client.execute({
+    sql: 'DELETE FROM projects WHERE id = ?',
+    args: [project.id],
+  });
+}
+
+export async function mergeProjects(
+  client: Client,
+  sourceName: string,
+  targetName: string,
+): Promise<{ sessionsMoved: number; target: Project }> {
+  const source = await getProjectByName(client, sourceName);
+  if (!source) throw new Error(`Source project not found: "${sourceName}"`);
+
+  const target = await getProjectByName(client, targetName);
+  if (!target) throw new Error(`Target project not found: "${targetName}"`);
+
+  if (source.id === target.id) {
+    throw new Error('Source and target project are the same.');
+  }
+
+  const active = await client.execute({
+    sql: `SELECT id FROM sessions WHERE project_id = ? AND status IN ('running', 'paused')`,
+    args: [source.id],
+  });
+  if (active.rows.length > 0) {
+    throw new Error(`Cannot merge: "${sourceName}" has a running or paused timer. Stop it first.`);
+  }
+
+  const result = await client.execute({
+    sql: 'UPDATE sessions SET project_id = ? WHERE project_id = ?',
+    args: [target.id, source.id],
+  });
+
+  const sessionsMoved = result.rowsAffected ?? 0;
+
+  await client.execute({
+    sql: 'DELETE FROM projects WHERE id = ?',
+    args: [source.id],
+  });
+
+  const updatedTarget = await getProjectById(client, target.id);
+  return { sessionsMoved, target: updatedTarget! };
+}
+
+/**
+ * Returns active projects whose names are similar to the given name.
+ * Normalises names by lowercasing and stripping spaces before comparison,
+ * so "BoldBathroom" and "Bold Bathroom" are treated as identical.
+ */
+export async function findSimilarProjects(
+  client: Client,
+  name: string,
+  threshold = 0.6
+): Promise<Project[]> {
+  const all = await listProjects(client, false);
+  const normalized = normalizeForComparison(name);
+  return all.filter((p) => {
+    const pNorm = normalizeForComparison(p.name);
+    if (pNorm === normalized) return true;
+    return bigramSimilarity(normalized, pNorm) >= threshold;
+  });
+}

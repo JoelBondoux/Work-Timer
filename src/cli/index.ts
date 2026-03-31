@@ -3,10 +3,10 @@
 import { Command } from 'commander';
 import { getClient, loadConfig } from '../db/client.js';
 import { startTimer, stopTimer, pauseTimer, resumeTimer, getRunningTimers } from '../core/timer.js';
-import { createProject, updateProject, listProjects, getProjectByName } from '../core/projects.js';
+import { createProject, updateProject, listProjects, getProjectByName, findSimilarProjects, renameProject, deleteProject, mergeProjects } from '../core/projects.js';
 import { getSettings, updateSetting, getEffectiveRate, getEffectiveCurrency, getEffectiveMinBlock } from '../core/settings.js';
 import { getBillingSummary } from '../core/billing.js';
-import { markInvoiced, markPaid } from '../core/sessions.js';
+import { markInvoiced, markPaid, adjustSession } from '../core/sessions.js';
 import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
 import { listPresetIds } from '../core/presets.js';
 import {
@@ -17,12 +17,23 @@ import {
   formatProjectList,
   formatDuration,
 } from '../core/format.js';
+import { utcDbToLocal } from '../core/time.js';
 import type { SettingKey } from '../types.js';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
+
+function prompt(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
 
 const program = new Command();
 
@@ -55,7 +66,7 @@ function parsePositiveSessionIds(sessionIds: string[]): number[] {
 program
   .name('work-timer')
   .description('Zero-cost work timer and billing tool for solo contractors')
-  .version('1.1.1');
+  .version('1.1.5');
 
 // --- Setup ---
 
@@ -136,9 +147,29 @@ program
   .action(async (project: string, opts: { rate?: number; currency?: string; notes?: string }) => {
     try {
       const client = await getClient();
+
+      // Similarity check: only runs when the exact name doesn't already exist
+      const exact = await getProjectByName(client, project);
+      if (!exact) {
+        const similar = await findSimilarProjects(client, project);
+        if (similar.length > 0) {
+          console.log(`No project named "${project}" found. Did you mean one of these?`);
+          similar.forEach((p, i) => console.log(`  ${i + 1}. ${p.name}`));
+          console.log(`  ${similar.length + 1}. Create new project "${project}"`);
+          const answer = await prompt(`Choose [1-${similar.length + 1}]: `);
+          const choice = parseInt(answer.trim(), 10);
+          if (choice >= 1 && choice <= similar.length) {
+            project = similar[choice - 1].name;
+          } else if (choice !== similar.length + 1) {
+            console.error('Invalid choice. Aborting.');
+            process.exit(1);
+          }
+        }
+      }
+
       const session = await startTimer(client, project, opts);
       console.log(`Timer started for "${session.project_name}" (session #${session.id})`);
-      console.log(`Started at: ${session.start_time}`);
+      console.log(`Started at: ${utcDbToLocal(session.start_time)}`);
     } catch (e) {
       console.error((e as Error).message);
       process.exit(1);
@@ -273,6 +304,61 @@ projectCmd
     }
   );
 
+projectCmd
+  .command('rename <old-name> <new-name>')
+  .description('Rename a project')
+  .action(async (oldName: string, newName: string) => {
+    try {
+      const client = await getClient();
+      const project = await renameProject(client, oldName, newName);
+      console.log(`Project renamed to "${project.name}".`);
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exit(1);
+    }
+  });
+
+projectCmd
+  .command('delete <name>')
+  .description('Delete a project. Blocked if sessions exist unless --force is passed.')
+  .option('--force', 'Delete the project and all its sessions permanently')
+  .action(async (name: string, opts: { force?: boolean }) => {
+    try {
+      const client = await getClient();
+      if (opts.force) {
+        const answer = await prompt(`Permanently delete "${name}" and all its sessions? Type "yes" to confirm: `);
+        if (answer.trim().toLowerCase() !== 'yes') {
+          console.log('Aborted.');
+          return;
+        }
+      }
+      await deleteProject(client, name, { force: opts.force });
+      console.log(`Project "${name}" deleted.`);
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exit(1);
+    }
+  });
+
+projectCmd
+  .command('merge <source> <target>')
+  .description('Move all sessions from source project into target project, then delete source')
+  .action(async (source: string, target: string) => {
+    try {
+      const client = await getClient();
+      const answer = await prompt(`Merge "${source}" into "${target}"? This will delete "${source}". Type "yes" to confirm: `);
+      if (answer.trim().toLowerCase() !== 'yes') {
+        console.log('Aborted.');
+        return;
+      }
+      const result = await mergeProjects(client, source, target);
+      console.log(`Merged "${source}" into "${result.target.name}" (${result.sessionsMoved} session(s) moved).`);
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exit(1);
+    }
+  });
+
 program
   .command('projects')
   .description('List all projects')
@@ -329,6 +415,33 @@ program
       console.log(formatBillingRecords(summary.records));
       console.log('');
       console.log(formatProjectTotals(summary.totals_by_project));
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exit(1);
+    }
+  });
+
+// --- Session commands ---
+
+program
+  .command('session adjust <session-id>')
+  .description('Adjust the start and/or end time of a session. Times must be in local time (YYYY-MM-DDTHH:MM:SS).')
+  .option('--start <datetime>', 'New start time in local time (YYYY-MM-DDTHH:MM:SS)')
+  .option('--end <datetime>', 'New end time in local time (YYYY-MM-DDTHH:MM:SS)')
+  .action(async (sessionIdStr: string, opts: { start?: string; end?: string }) => {
+    try {
+      const sessionId = Number(sessionIdStr);
+      if (!Number.isInteger(sessionId) || sessionId <= 0) {
+        throw new Error(`Invalid session ID: ${sessionIdStr}`);
+      }
+      const client = await getClient();
+      const updated = await adjustSession(client, sessionId, {
+        start_time: opts.start,
+        end_time: opts.end,
+      });
+      console.log(`Session #${updated.id} updated.`);
+      if (updated.start_time) console.log(`  Start: ${utcDbToLocal(updated.start_time)}`);
+      if (updated.end_time)   console.log(`  End:   ${utcDbToLocal(updated.end_time)}`);
     } catch (e) {
       console.error((e as Error).message);
       process.exit(1);

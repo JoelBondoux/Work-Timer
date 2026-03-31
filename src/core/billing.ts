@@ -2,6 +2,7 @@ import type { Client } from '@libsql/client';
 import type { Session, Project, Settings, BillingRecord, BillingSummary, ProjectTotal } from '../types.js';
 import { getSettings, getEffectiveRate, getEffectiveCurrency, getEffectiveMinBlock } from './settings.js';
 import { getSessionDurationMinutes } from './timer.js';
+import { utcDbToLocal, utcDbToLocalDate, localToUtcRangeStart, localToUtcRangeEnd } from './time.js';
 export function applyMinBlock(rawMinutes: number, minBlockMinutes: number): number {
   if (minBlockMinutes <= 0) return rawMinutes;
   return Math.ceil(rawMinutes / minBlockMinutes) * minBlockMinutes;
@@ -27,9 +28,9 @@ export async function calculateBillingRecord(
   return {
     session_id: session.id,
     project_name: project.name,
-    date: session.start_time.split('T')[0],
-    start_time: session.start_time,
-    end_time: session.end_time ?? '',
+    date: utcDbToLocalDate(session.start_time),
+    start_time: utcDbToLocal(session.start_time),
+    end_time: session.end_time ? utcDbToLocal(session.end_time) : '',
     raw_duration_minutes: Math.round(rawMinutes * 100) / 100,
     billed_duration_minutes: billedMinutes,
     rate,
@@ -63,11 +64,11 @@ export async function getBillingSummary(
   }
   if (filters.from) {
     whereClauses.push('s.start_time >= ?');
-    args.push(filters.from);
+    args.push(localToUtcRangeStart(filters.from));
   }
   if (filters.to) {
     whereClauses.push('s.start_time <= ?');
-    args.push(filters.to);
+    args.push(localToUtcRangeEnd(filters.to));
   }
   if (filters.unbilledOnly) {
     whereClauses.push('s.invoiced_at IS NULL');

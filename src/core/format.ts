@@ -1,4 +1,5 @@
 import type { RunningTimer, BillingRecord, ProjectTotal, Project } from '../types.js';
+import { utcDbToLocal } from './time.js';
 
 const CONTROL_CHARS_REGEX = /[\u0000-\u001f\u007f-\u009f]/g;
 const ANSI_ESCAPE_REGEX = /\u001b\[[0-?]*[ -/]*[@-~]/g;
@@ -30,7 +31,7 @@ export function formatRunningTimers(timers: RunningTimer[]): string {
     const status = t.status === 'paused' ? ' (PAUSED)' : '';
     const notes = safeNotes ? ` — ${safeNotes}` : '';
     lines.push(
-      `  #${t.session_id} ${safeProjectName}  ${formatDuration(t.elapsed_minutes)}  (started ${t.start_time})${status}${notes}`
+      `  #${t.session_id} ${safeProjectName}  ${formatDuration(t.elapsed_minutes)}  (started ${utcDbToLocal(t.start_time)})${status}${notes}`
     );
   }
   return lines.join('\n');

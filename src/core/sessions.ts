@@ -1,5 +1,6 @@
 import type { Client } from '@libsql/client';
 import type { Session } from '../types.js';
+import { localToUtcRangeStart, localToUtcRangeEnd, localDateTimeToUtcDb } from './time.js';
 
 function rowToSession(row: Record<string, unknown>): Session {
   return {
@@ -36,11 +37,11 @@ export async function querySessions(
   }
   if (filters.from) {
     whereClauses.push('s.start_time >= ?');
-    args.push(filters.from);
+    args.push(localToUtcRangeStart(filters.from));
   }
   if (filters.to) {
     whereClauses.push('s.start_time <= ?');
-    args.push(filters.to);
+    args.push(localToUtcRangeEnd(filters.to));
   }
   if (filters.status) {
     whereClauses.push('s.status = ?');
@@ -103,6 +104,55 @@ export async function markPaid(client: Client, sessionIds: number[]): Promise<nu
     });
     updated += result.rowsAffected;
   }
+  return updated;
+}
+
+export async function adjustSession(
+  client: Client,
+  sessionId: number,
+  opts: { start_time?: string; end_time?: string }
+): Promise<Session> {
+  if (!opts.start_time && !opts.end_time) {
+    throw new Error('At least one of start_time or end_time must be provided.');
+  }
+
+  const session = await getSession(client, sessionId);
+  if (!session) throw new Error(`Session not found: ${sessionId}`);
+
+  const newStartUtc = opts.start_time
+    ? localDateTimeToUtcDb(opts.start_time)
+    : session.start_time;
+
+  let newEndUtc: string | null = session.end_time;
+  if (opts.end_time !== undefined) {
+    if (session.status !== 'completed') {
+      throw new Error(
+        `Cannot set an end time on session #${sessionId} because it is still ${session.status}. Stop the timer first.`
+      );
+    }
+    newEndUtc = localDateTimeToUtcDb(opts.end_time);
+  }
+
+  if (newEndUtc !== null && newStartUtc >= newEndUtc) {
+    throw new Error('start_time must be before end_time.');
+  }
+
+  const setClauses: string[] = ['start_time = ?'];
+  const args: (string | null | number)[] = [newStartUtc];
+
+  if (newEndUtc !== session.end_time) {
+    setClauses.push('end_time = ?');
+    args.push(newEndUtc);
+  }
+
+  args.push(sessionId);
+  await client.execute({
+    sql: `UPDATE sessions SET ${setClauses.join(', ')} WHERE id = ?`,
+    args,
+  });
+
+  const updated = await getSession(client, sessionId);
+  if (!updated) throw new Error('Failed to update session');
   return updated;
 }
 

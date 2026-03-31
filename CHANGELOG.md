@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-03-31
+
+### Added
+
+- `session adjust <id> --start <datetime> --end <datetime>` CLI command to correct a session's start and/or end time
+- `session_adjust` MCP tool with the same capability
+- Both accept local time (`YYYY-MM-DDTHH:MM:SS`) and store as UTC; confirmation shows adjusted times in local time
+- Setting an end time is blocked if the session is still running or paused; start must be before end
+- `localDateTimeToUtcDb` helper added to `src/core/time.ts` for exact local→UTC datetime conversion
+
+## [1.1.4] - 2026-03-31
+
+### Fixed
+
+- All displayed timestamps (timer start/stop confirmations, running timer status, billing records, exports) now show the **local wall-clock time** instead of raw UTC from the database
+- Date filters (`--from` / `--to` and their MCP equivalents) now correctly interpret user-supplied dates as **local calendar dates**, converting them to the corresponding UTC range before querying. This means `--from 2026-03-31` returns all sessions that started on March 31 in your timezone, regardless of the UTC offset
+- The "already has a running timer" error message now shows the start time in local time
+
+### Added
+
+- New internal `src/core/time.ts` module with `utcDbToLocal`, `utcDbToLocalDate`, `localToUtcRangeStart`, and `localToUtcRangeEnd` helpers used consistently across the codebase
+
+## [1.1.3] - 2026-03-31
+
+### Added
+
+- `project rename <old-name> <new-name>` CLI subcommand to rename a project
+- `project delete <name>` CLI subcommand to delete a project; blocked if sessions exist unless `--force` is passed (prompts for confirmation before force-deleting)
+- `project merge <source> <target>` CLI subcommand to move all sessions from one project into another and delete the source (prompts for confirmation)
+- `project list [--all]` CLI subcommand (mirrors the existing `projects` command)
+- `project_rename`, `project_delete`, `project_merge` MCP tools with equivalent behaviour; `project_delete` accepts a `force` boolean parameter
+
+## [1.1.2] - 2026-03-31
+
+### Added
+
+- Project name similarity check when starting a timer for a project that does not yet exist
+- CLI `start` command now detects similar project names (e.g. "BoldBathroom" vs "Bold Bathroom") and presents an interactive menu to choose an existing project or confirm creating a new one
+- MCP `timer_start` tool now returns a warning listing similar project names when no exact match is found; pass `confirm_new_project: true` to bypass the check and force creation
+
 ## [1.1.1] - 2026-03-25
 
 ### Added

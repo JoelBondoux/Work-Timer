@@ -3,10 +3,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { getClient } from '../db/client.js';
 import { startTimer, stopTimer, pauseTimer, resumeTimer, getRunningTimers } from '../core/timer.js';
-import { createProject, updateProject, listProjects, getProjectByName } from '../core/projects.js';
+import { createProject, updateProject, listProjects, getProjectByName, findSimilarProjects, renameProject, deleteProject, mergeProjects } from '../core/projects.js';
 import { getSettings, updateSetting, getEffectiveRate, getEffectiveCurrency, getEffectiveMinBlock } from '../core/settings.js';
 import { getBillingSummary } from '../core/billing.js';
-import { markInvoiced, markPaid, querySessions } from '../core/sessions.js';
+import { markInvoiced, markPaid, querySessions, adjustSession } from '../core/sessions.js';
 import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
 import { listPresetIds } from '../core/presets.js';
 import { getMcpExportRoot, resolveMcpOutputPath } from '../core/output-path.js';
@@ -18,6 +18,7 @@ import {
   formatProjectList,
   formatDuration,
 } from '../core/format.js';
+import { utcDbToLocal } from '../core/time.js';
 import type { SettingKey } from '../types.js';
 
 function textResult(text: string) {
@@ -30,7 +31,7 @@ function errorResult(message: string) {
 
 const server = new McpServer({
   name: 'work-timer',
-  version: '1.1.1',
+  version: '1.1.5',
 });
 
 const nonNegativeFiniteNumber = z.number().finite().nonnegative();
@@ -41,19 +42,37 @@ const positiveInteger = z.number().int().positive();
 
 server.tool(
   'timer_start',
-  'Start a timer for a project. Creates the project if it does not exist.',
+  'Start a timer for a project. Creates the project if it does not exist. If no exact match is found but similar project names exist, returns a warning listing them — unless confirm_new_project is true.',
   {
     project: z.string().describe('Project name'),
     rate: nonNegativeFiniteNumber.optional().describe('Billing rate per hour'),
     currency: z.string().optional().describe('Currency code (e.g. USD, EUR, GBP)'),
     notes: z.string().optional().describe('Notes for this session'),
+    confirm_new_project: z.boolean().optional().describe(
+      'Set to true to create a new project even when similar names already exist'
+    ),
   },
-  async ({ project, rate, currency, notes }) => {
+  async ({ project, rate, currency, notes, confirm_new_project }) => {
     try {
       const client = await getClient();
+
+      if (!confirm_new_project) {
+        const exact = await getProjectByName(client, project);
+        if (!exact) {
+          const similar = await findSimilarProjects(client, project);
+          if (similar.length > 0) {
+            const nameList = similar.map((p) => `"${p.name}"`).join(', ');
+            return textResult(
+              `No project named "${project}" exists, but similar projects were found: ${nameList}.\n` +
+              `To use an existing project, pass its exact name. To create a new project named "${project}", set confirm_new_project: true.`
+            );
+          }
+        }
+      }
+
       const session = await startTimer(client, project, { rate, currency, notes });
       return textResult(
-        `Timer started for "${session.project_name}" (session #${session.id})\nStarted at: ${session.start_time}`
+        `Timer started for "${session.project_name}" (session #${session.id})\nStarted at: ${utcDbToLocal(session.start_time)}`
       );
     } catch (e) {
       return errorResult((e as Error).message);
@@ -201,6 +220,62 @@ server.tool(
   }
 );
 
+server.tool(
+  'project_rename',
+  'Rename a project.',
+  {
+    old_name: z.string().describe('Current project name'),
+    new_name: z.string().describe('New project name'),
+  },
+  async ({ old_name, new_name }) => {
+    try {
+      const client = await getClient();
+      const project = await renameProject(client, old_name, new_name);
+      return textResult(`Project renamed to "${project.name}".`);
+    } catch (e) {
+      return errorResult((e as Error).message);
+    }
+  }
+);
+
+server.tool(
+  'project_delete',
+  'Delete a project. Blocked if sessions exist unless force is true, in which case all sessions are permanently deleted.',
+  {
+    name: z.string().describe('Project name to delete'),
+    force: z.boolean().optional().describe('Set to true to delete the project and all its sessions permanently'),
+  },
+  async ({ name, force }) => {
+    try {
+      const client = await getClient();
+      await deleteProject(client, name, { force });
+      return textResult(`Project "${name}" deleted.`);
+    } catch (e) {
+      return errorResult((e as Error).message);
+    }
+  }
+);
+
+server.tool(
+  'project_merge',
+  'Move all sessions from the source project into the target project, then delete the source project.',
+  {
+    source: z.string().describe('Name of the project to merge from (will be deleted)'),
+    target: z.string().describe('Name of the project to merge into (kept)'),
+  },
+  async ({ source, target }) => {
+    try {
+      const client = await getClient();
+      const result = await mergeProjects(client, source, target);
+      return textResult(
+        `Merged "${source}" into "${result.target.name}" (${result.sessionsMoved} session(s) moved).`
+      );
+    } catch (e) {
+      return errorResult((e as Error).message);
+    }
+  }
+);
+
 // --- Billing/query tools ---
 
 server.tool(
@@ -253,6 +328,30 @@ server.tool(
         formatProjectTotals(summary.totals_by_project),
       ].join('\n');
       return textResult(output);
+    } catch (e) {
+      return errorResult((e as Error).message);
+    }
+  }
+);
+
+// --- Session tools ---
+
+server.tool(
+  'session_adjust',
+  'Adjust the start and/or end time of a session. Supply times in local time (YYYY-MM-DDTHH:MM:SS); they are automatically converted to UTC for storage.',
+  {
+    session_id: positiveInteger.describe('Session ID to adjust'),
+    start_time: z.string().optional().describe('New start time in local time (YYYY-MM-DDTHH:MM:SS)'),
+    end_time: z.string().optional().describe('New end time in local time (YYYY-MM-DDTHH:MM:SS) — only valid for completed sessions'),
+  },
+  async ({ session_id, start_time, end_time }) => {
+    try {
+      const client = await getClient();
+      const updated = await adjustSession(client, session_id, { start_time, end_time });
+      const lines = [`Session #${updated.id} updated.`];
+      lines.push(`  Start: ${utcDbToLocal(updated.start_time)}`);
+      if (updated.end_time) lines.push(`  End:   ${utcDbToLocal(updated.end_time)}`);
+      return textResult(lines.join('\n'));
     } catch (e) {
       return errorResult((e as Error).message);
     }
