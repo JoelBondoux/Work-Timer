@@ -33,7 +33,7 @@ You can now run `work-timer` from any directory.
 
 ```bash
 work-timer --version
-# Should output: 1.3.2 (or newer)
+# Should output: 1.3.3 (or newer)
 ```
 
 ### Update to Latest GitHub Version
