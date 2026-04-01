@@ -1,11 +1,14 @@
 # Work-Timer
 
+Current version: 1.3.21
+
 A zero-cost, open-source work timer and billing tool built for solo contractors and freelancers. Control it with natural language through any MCP-compatible AI assistant (Claude, Cursor, etc.) or via the command line.
 
 ## Features
 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
 - **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
+- **Expanded CLI integrations** — Auto-installer supports Claude Code, OpenAI Codex CLI, and Google Gemini CLI command-based MCP registration
 - **Built-in MCP help** — `work_timer_help` explains capabilities, workflows, and example usage for LLMs/users
 - **MCP auto-installer** — Programmatically detects and patches supported local MCP client configs with backup + dry-run support
 - **CLI** — Full command-line interface for quick manual use
@@ -39,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These scripts auto-detect whether your local `Work-Timer` folder already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production pinning, replace `master` in the URL with a release tag such as `v1.3.16`.
+For production pinning, replace `master` in the URL with a release tag such as `v1.3.21`.
 
 Faster branch-testing options:
 - Skip build: set `WORK_TIMER_SKIP_BUILD=1`
@@ -87,7 +90,7 @@ Optional: auto-register Work-Timer in detected local MCP clients:
 
 ```bash
 work-timer mcp install --dry-run
-work-timer mcp install
+work-timer mcp install --create-missing
 ```
 
 Or set environment variables:
@@ -142,6 +145,7 @@ Then just talk naturally:
 | [Billing Logic](docs/billing.md) | How duration, rounding, and amounts are calculated |
 | [Export Guide](docs/export.md) | CSV and XLSX export formats and accounting software import |
 | [Invoicing Guide](docs/invoicing.md) | Tracking invoices and payments |
+| [Roadmap](docs/roadmap.md) | Planned future enhancements and priorities |
 | [Contributing](docs/contributing.md) | Developer setup, architecture, and PR guidelines |
 
 ## How It Works

@@ -1,4 +1,4 @@
-export type McpClientId = 'claude-desktop' | 'cursor' | 'vscode' | 'vscode-insiders' | 'claude-code' | 'chatgpt-desktop';
+export type McpClientId = 'claude-desktop' | 'cursor' | 'vscode' | 'vscode-insiders' | 'claude-code' | 'codex-cli' | 'gemini-cli' | 'chatgpt-desktop';
 type JsonSchema = 'claude' | 'copilot';
 export type JsonMcpTarget = {
     id: McpClientId;

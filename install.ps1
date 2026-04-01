@@ -9,6 +9,40 @@ param(
 $ErrorActionPreference = "Stop"
 $RepoUrl = "https://github.com/JoelBondoux/Work-Timer.git"
 
+function Invoke-External {
+  param(
+    [Parameter(Mandatory = $true)][string]$Command,
+    [Parameter(Mandatory = $false)][string[]]$Args = @(),
+    [Parameter(Mandatory = $true)][string]$FailureMessage
+  )
+
+  & $Command @Args
+  if ($LASTEXITCODE -ne 0) {
+    throw "$FailureMessage (exit code: $LASTEXITCODE)"
+  }
+}
+
+function Install-Dependencies {
+  if (Test-Path "package-lock.json") {
+    Write-Host "Installing dependencies with npm ci..."
+    try {
+      Invoke-External -Command "npm" -Args @("ci") -FailureMessage "npm ci failed"
+    } catch {
+      if (($env:OS -eq "Windows_NT") -and (Test-Path "node_modules")) {
+        Write-Host "npm ci failed on Windows (possible file lock). Retrying once after clearing node_modules..."
+        Remove-Item "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        Invoke-External -Command "npm" -Args @("ci") -FailureMessage "npm ci retry failed"
+      } else {
+        throw
+      }
+    }
+  } else {
+    Write-Host "Installing dependencies with npm install..."
+    Invoke-External -Command "npm" -Args @("install") -FailureMessage "npm install failed"
+  }
+}
+
 function Assert-Command([string]$Name) {
   if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
     throw "Required command not found on PATH: $Name"
@@ -56,36 +90,31 @@ if (Test-Path $installDir) {
   }
 
   Write-Host "Existing install repository detected. Updating..."
-  git fetch origin $RepoRef --tags
-  git checkout $RepoRef
-  git pull --ff-only origin $RepoRef
+  Invoke-External -Command "git" -Args @("fetch", "origin", $RepoRef, "--tags") -FailureMessage "git fetch failed"
+  Invoke-External -Command "git" -Args @("checkout", $RepoRef) -FailureMessage "git checkout failed"
+  Invoke-External -Command "git" -Args @("pull", "--ff-only", "origin", $RepoRef) -FailureMessage "git pull failed"
 } else {
   Write-Host "No install repository detected. Cloning..."
-  git clone --branch $RepoRef --single-branch $RepoUrl $installDir
+  Invoke-External -Command "git" -Args @("clone", "--branch", $RepoRef, "--single-branch", $RepoUrl, $installDir) -FailureMessage "git clone failed"
   Set-Location $installDir
 }
 
-if (Test-Path "package-lock.json") {
-  Write-Host "Installing dependencies with npm ci..."
-  npm ci
-} else {
-  Write-Host "Installing dependencies with npm install..."
-  npm install
-}
+Install-Dependencies
 
 if (-not $SkipBuild) {
   Write-Host "Building project..."
-  npm run build
+  Invoke-External -Command "npm" -Args @("run", "build") -FailureMessage "npm run build failed"
 } else {
   Write-Host "Skipping build (requested)."
 }
 
 if (-not $SkipLink) {
   Write-Host "Linking work-timer globally..."
-  npm link
+  Invoke-External -Command "npm" -Args @("link") -FailureMessage "npm link failed"
 }
 
 Write-Host ""
 Write-Host "Installation complete."
 Write-Host "Run: work-timer setup"
 Write-Host "Optional MCP setup: work-timer mcp install --dry-run"
+Write-Host "Then run: work-timer mcp install --create-missing"

@@ -52,6 +52,23 @@ List known MCP client targets and whether their local config is detected.
 work-timer mcp list
 ```
 
+### `work-timer mcp doctor`
+
+Diagnose MCP setup issues and print exact fix commands for each client.
+
+```bash
+work-timer mcp doctor
+work-timer mcp doctor --clients claude-desktop
+work-timer mcp doctor --server-path /absolute/path/to/server.js
+```
+
+Behavior:
+- Verifies the Work-Timer MCP server path exists.
+- Checks each selected local client target and reports `ok`, `warn`, or `error`.
+- For file-based clients, detects missing/outdated entries and prints the exact `work-timer mcp install ...` fix command.
+- For command-based clients, checks whether the client CLI command is available on PATH.
+- Exits non-zero when hard errors are found.
+
 ### `work-timer mcp install`
 
 Programmatically install/update Work-Timer MCP registration across supported local clients.
@@ -60,7 +77,7 @@ Programmatically install/update Work-Timer MCP registration across supported loc
 work-timer mcp install
 work-timer mcp install --dry-run
 work-timer mcp install --create-missing
-work-timer mcp install --clients claude-desktop,cursor,vscode
+work-timer mcp install --clients claude-desktop,cursor,vscode,codex-cli,gemini-cli
 work-timer mcp install --server-path /absolute/path/to/server.js
 ```
 
@@ -68,7 +85,7 @@ Options:
 
 | Flag | Description |
 |------|-------------|
-| `--clients <ids>` | Comma-separated client IDs (`claude-desktop,cursor,vscode,vscode-insiders,claude-code,chatgpt-desktop`) |
+| `--clients <ids>` | Comma-separated client IDs (`claude-desktop,cursor,vscode,vscode-insiders,claude-code,codex-cli,gemini-cli,chatgpt-desktop`) |
 | `--server-path <path>` | Override MCP server path (defaults to this Work-Timer install's `dist/mcp/server.js`) |
 | `--create-missing` | Create missing JSON config files/directories for supported clients |
 | `--dry-run` | Preview operations without writing files or running commands |
@@ -76,7 +93,10 @@ Options:
 Behavior:
 - Existing config files are backed up before rewrite (`.bak.<timestamp>`).
 - `claude-code` uses command-mode install via `claude mcp add ...`.
+- `codex-cli` uses command-mode install via `codex mcp add ...`.
+- `gemini-cli` uses command-mode install via `gemini mcp add --scope user ...`.
 - `chatgpt-desktop` is reported as manual because connector creation is currently in-app.
+- Fresh installs are best done with `--create-missing`; otherwise clients without an existing config file are skipped with follow-up instructions.
 - If auto-install fails, CLI prints client-specific manual follow-up steps to complete setup.
 - Prints a beginner-friendly run summary with counts for updated/unchanged/skipped/error results.
 - Prints a recommended client system prompt that tells LLMs to call `work_timer_help` first for capability questions.

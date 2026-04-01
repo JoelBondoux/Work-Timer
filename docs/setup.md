@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These install scripts automatically detect whether `~/Work-Timer` already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.16`.
+For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.21`.
 
 Installer behavior notes:
 - Existing repositories with uncommitted changes are kept untouched by default; installer uses a clean sibling folder (`*-installer`) automatically.
@@ -160,7 +160,7 @@ work-timer mcp install --dry-run
 Install/update in detected clients:
 
 ```bash
-work-timer mcp install
+work-timer mcp install --create-missing
 ```
 
 Create missing config files/directories when needed:
@@ -172,7 +172,7 @@ work-timer mcp install --create-missing
 Target specific clients only:
 
 ```bash
-work-timer mcp install --clients claude-desktop,cursor,vscode
+work-timer mcp install --clients claude-desktop,cursor,vscode,codex-cli,gemini-cli
 ```
 
 List known targets and detection status:
@@ -181,12 +181,13 @@ List known targets and detection status:
 work-timer mcp list
 ```
 
-Supported client IDs: `claude-desktop`, `cursor`, `vscode`, `vscode-insiders`, `claude-code`, `chatgpt-desktop`.
+Supported client IDs: `claude-desktop`, `cursor`, `vscode`, `vscode-insiders`, `claude-code`, `codex-cli`, `gemini-cli`, `chatgpt-desktop`.
 
 Notes:
 - Existing JSON configs are backed up automatically before rewrite (`.bak.<timestamp>`).
 - ChatGPT Desktop currently remains manual (in-app connector flow) and is reported as manual by the installer.
 - The installer prints a recommended system prompt you can paste into clients that support custom instructions.
+- If you run without `--create-missing`, any client whose config file does not exist yet is skipped with follow-up instructions.
 
 ### Option B: Manual client setup
 
@@ -235,6 +236,38 @@ claude mcp add work-timer -- node /absolute/path/to/Work-Timer/dist/mcp/server.j
 ```
 
 To verify it was added, type `/mcp` in the Claude Code chat panel. You can also manage (enable/disable/reconnect) servers from there.
+
+### OpenAI Codex CLI
+
+Auto-install with Work-Timer:
+
+```bash
+work-timer mcp install --clients codex-cli
+```
+
+Or run Codex directly:
+
+```bash
+codex mcp add work-timer -- node /absolute/path/to/Work-Timer/dist/mcp/server.js
+```
+
+Codex stores MCP server entries in `~/.codex/config.toml`.
+
+### Google Gemini CLI
+
+Auto-install with Work-Timer:
+
+```bash
+work-timer mcp install --clients gemini-cli
+```
+
+Or run Gemini directly:
+
+```bash
+gemini mcp add --scope user work-timer node /absolute/path/to/Work-Timer/dist/mcp/server.js
+```
+
+Gemini stores user-scope MCP settings in `~/.gemini/settings.json`.
 
 ### ChatGPT Desktop
 

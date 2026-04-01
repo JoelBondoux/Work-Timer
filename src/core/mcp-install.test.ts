@@ -85,10 +85,12 @@ describe('upsertMcpServerConfig', () => {
 
 describe('parseClientIds', () => {
   it('parses comma-separated ids', () => {
-    expect(parseClientIds('claude-desktop, cursor,vscode')).toEqual([
+    expect(parseClientIds('claude-desktop, cursor,vscode,codex-cli,gemini-cli')).toEqual([
       'claude-desktop',
       'cursor',
       'vscode',
+      'codex-cli',
+      'gemini-cli',
     ]);
   });
 
@@ -115,9 +117,41 @@ describe('discoverMcpTargets', () => {
       join('Code', 'User', 'mcp.json')
     );
   });
+
+  it('includes command-based Codex and Gemini targets', () => {
+    const targets = discoverMcpTargets({
+      platform: 'win32',
+      env: { APPDATA: join('C:', 'Users', 'alice', 'AppData', 'Roaming') },
+    });
+
+    const codex = targets.find((t) => t.id === 'codex-cli');
+    expect(codex && codex.kind === 'command' ? codex.command : '').toBe('codex');
+
+    const gemini = targets.find((t) => t.id === 'gemini-cli');
+    expect(gemini && gemini.kind === 'command' ? gemini.command : '').toBe('gemini');
+  });
 });
 
 describe('applyJsonMcpInstall', () => {
+  it('returns a create-missing hint when config is absent', () => {
+    const result = applyJsonMcpInstall({
+      target: {
+        id: 'claude-desktop',
+        label: 'Claude Desktop',
+        kind: 'json',
+        configPath: '/tmp/does-not-exist/claude_desktop_config.json',
+        schema: 'claude',
+        exists: false,
+      },
+      serverPath: '/tmp/work-timer/dist/mcp/server.js',
+      dryRun: false,
+      createMissing: false,
+    });
+
+    expect(result.status).toBe('skipped-missing');
+    expect(result.message).toContain('--create-missing');
+  });
+
   it('creates a backup next to edited config files', () => {
     const dir = mkdtempSync(join(tmpdir(), 'work-timer-mcp-'));
     const configPath = join(dir, 'mcp.json');

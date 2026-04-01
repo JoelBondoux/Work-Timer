@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.21] - 2026-04-01
+
+### Added
+
+- Added a local-only `staging/` workspace convention (gitignored) for ad-hoc testing/debugging artifacts that should never be committed.
+- Documented the staging workspace usage guidance in `docs/contributing.md`.
+
+## [1.3.20] - 2026-04-01
+
+### Fixed
+
+- Hardened installer command execution so failed native commands (`git`, `npm`) now stop the install immediately instead of continuing to later steps.
+- PowerShell installer now retries `npm ci` once on Windows after clearing `node_modules` to handle common `EPERM` lock errors on native binaries.
+- Shell installer now includes a single retry path for Windows-like shells when `npm ci` fails due to transient file locks.
+
+## [1.3.19] - 2026-04-01
+
+### Added
+
+- Added new roadmap document at `docs/roadmap.md`.
+- Added a planned item for a hosted remote MCP service to capture future multi-client access work.
+
+### Changed
+
+- Linked the roadmap from the main documentation table in `README.md`.
+
+## [1.3.18] - 2026-04-01
+
+### Added
+
+- Added command-based MCP auto-install support for `codex-cli` (OpenAI Codex CLI) and `gemini-cli` (Google Gemini CLI)
+- Added `work-timer mcp doctor` diagnostics coverage for the new command-based clients
+
+### Changed
+
+- Updated MCP install/list docs and setup guide to include OpenAI Codex CLI and Google Gemini CLI workflows
+
+## [1.3.17] - 2026-04-01
+
+### Changed
+
+- Improved `work-timer mcp install` fresh-install UX by adding explicit `--create-missing` guidance when client config files are absent
+- Quick-start and installer completion hints now recommend `work-timer mcp install --create-missing` for first-time MCP setup
+- Updated setup and CLI docs to clarify why missing client config files are skipped without `--create-missing`
+
 ## [1.3.16] - 2026-04-01
 
 ### Changed

@@ -18,7 +18,7 @@ import { Writable } from 'node:stream';
 import { spawnSync } from 'node:child_process';
 import { get } from 'node:https';
 import { fileURLToPath } from 'node:url';
-import { applyCommandMcpInstall, applyJsonMcpInstall, discoverMcpTargets, getManualInstallInstructions, getRecommendedLlmSystemPrompt, parseClientIds, } from './mcp-install.js';
+import { applyCommandMcpInstall, applyJsonMcpInstall, discoverMcpTargets, getManualInstallInstructions, getRecommendedLlmSystemPrompt, parseClientIds, upsertMcpServerConfig, } from './mcp-install.js';
 function prompt(question) {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
     return new Promise((resolve) => {
@@ -29,7 +29,7 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.16';
+const CLI_VERSION = '1.3.21';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -47,7 +47,7 @@ function printPostInstallQuickStart() {
     console.log('   work-timer query');
     console.log('5) Optional: connect to local AI clients (MCP):');
     console.log('   work-timer mcp install --dry-run');
-    console.log('   work-timer mcp install');
+    console.log('   work-timer mcp install --create-missing');
 }
 function parseNonNegativeNumber(value, label) {
     const parsed = Number(value);
@@ -494,9 +494,111 @@ mcpCmd
     }
 });
 mcpCmd
+    .command('doctor')
+    .description('Diagnose MCP setup and print actionable fixes for local clients')
+    .option('--clients <ids>', 'Comma-separated client ids: claude-desktop,cursor,vscode,vscode-insiders,claude-code,codex-cli,gemini-cli,chatgpt-desktop')
+    .option('--server-path <path>', 'Absolute path to MCP server.js (defaults to this Work-Timer install)')
+    .action((opts) => {
+    try {
+        const serverPath = opts.serverPath ?? getBundledMcpServerPath();
+        const requestedIds = opts.clients ? parseClientIds(opts.clients) : null;
+        const targets = discoverMcpTargets().filter((target) => requestedIds ? requestedIds.includes(target.id) : true);
+        if (targets.length === 0) {
+            console.log('No matching MCP clients selected.');
+            return;
+        }
+        console.log('Running MCP diagnostics...');
+        console.log(`Using MCP server path: ${serverPath}`);
+        const serverExists = existsSync(serverPath);
+        console.log(`- server-path: ${serverExists ? 'ok' : 'error'}`);
+        if (!serverExists) {
+            console.log('  MCP server file was not found at this path.');
+            console.log('  Fix: run `work-timer update` or pass --server-path with a valid dist/mcp/server.js path.');
+        }
+        let okCount = 0;
+        let warnCount = 0;
+        let errorCount = 0;
+        for (const target of targets) {
+            if (target.kind === 'json') {
+                if (!target.exists) {
+                    warnCount += 1;
+                    console.log(`- ${target.id}: warn`);
+                    console.log(`  Config not found: ${target.configPath}`);
+                    console.log(`  Fix: run \`work-timer mcp install --clients ${target.id} --create-missing\` and restart the client.`);
+                    continue;
+                }
+                try {
+                    const sourceText = readFileSync(target.configPath, 'utf-8');
+                    const check = upsertMcpServerConfig({
+                        sourceText,
+                        schema: target.schema,
+                        serverPath,
+                    });
+                    if (check.changed) {
+                        warnCount += 1;
+                        console.log(`- ${target.id}: warn`);
+                        console.log('  work-timer entry is missing or out of date in this config.');
+                        console.log(`  Fix: run \`work-timer mcp install --clients ${target.id}\` and restart the client.`);
+                    }
+                    else {
+                        okCount += 1;
+                        console.log(`- ${target.id}: ok`);
+                        console.log('  work-timer MCP entry is present and up to date.');
+                    }
+                }
+                catch (error) {
+                    errorCount += 1;
+                    console.log(`- ${target.id}: error`);
+                    console.log(`  Could not read/parse config: ${target.configPath}`);
+                    console.log(`  Details: ${error.message}`);
+                    console.log('  Fix: repair JSON and rerun `work-timer mcp install` or apply manual setup instructions.');
+                }
+                continue;
+            }
+            if (target.kind === 'command') {
+                const result = spawnSync(target.command, ['--version'], {
+                    encoding: 'utf-8',
+                    stdio: ['ignore', 'pipe', 'pipe'],
+                });
+                if (result.status === 0) {
+                    okCount += 1;
+                    console.log(`- ${target.id}: ok`);
+                    console.log('  Client CLI command is available on PATH.');
+                }
+                else {
+                    warnCount += 1;
+                    console.log(`- ${target.id}: warn`);
+                    console.log('  Client CLI command was not detected on PATH.');
+                    console.log(`  Fix: install/update the client CLI, then run \`work-timer mcp install --clients ${target.id}\`.`);
+                }
+                continue;
+            }
+            warnCount += 1;
+            console.log(`- ${target.id}: warn`);
+            console.log('  This client uses manual MCP setup.');
+            console.log(`  Note: ${target.notes}`);
+        }
+        if (!serverExists) {
+            errorCount += 1;
+        }
+        console.log('');
+        console.log('MCP doctor summary:');
+        console.log(`- ok: ${okCount}`);
+        console.log(`- warnings: ${warnCount}`);
+        console.log(`- errors: ${errorCount}`);
+        if (errorCount > 0) {
+            process.exit(1);
+        }
+    }
+    catch (e) {
+        console.error(e.message);
+        process.exit(1);
+    }
+});
+mcpCmd
     .command('install')
     .description('Install or update Work-Timer MCP registration in supported local client configs')
-    .option('--clients <ids>', 'Comma-separated client ids: claude-desktop,cursor,vscode,vscode-insiders,claude-code,chatgpt-desktop')
+    .option('--clients <ids>', 'Comma-separated client ids: claude-desktop,cursor,vscode,vscode-insiders,claude-code,codex-cli,gemini-cli,chatgpt-desktop')
     .option('--server-path <path>', 'Absolute path to MCP server.js (defaults to this Work-Timer install)')
     .option('--create-missing', 'Create missing JSON config files/directories for supported clients')
     .option('--dry-run', 'Preview changes without writing files or running commands')
@@ -558,6 +660,10 @@ mcpCmd
         console.log(`- unchanged: ${unchangedCount}`);
         console.log(`- skipped: ${skippedCount}`);
         console.log(`- errors: ${errorCount}`);
+        if (skippedCount > 0 && !opts.createMissing) {
+            console.log('- tip: some clients were skipped because config files were missing.');
+            console.log('  rerun with --create-missing to create missing JSON configs automatically.');
+        }
         if (errorCount === 0) {
             console.log('Done. If a client was updated, restart that client to load new MCP settings.');
         }
