@@ -23,6 +23,8 @@ Write-Host "Work-Timer installer"
 Write-Host "Target directory: $RepoDir"
 Write-Host "Source ref: $RepoRef"
 
+$installDir = $RepoDir
+
 if (Test-Path $RepoDir) {
   if (-not (Test-Path (Join-Path $RepoDir ".git"))) {
     throw "Directory exists but is not a Git repository: $RepoDir"
@@ -36,17 +38,31 @@ if (Test-Path $RepoDir) {
 
   $dirty = (git status --porcelain 2>$null)
   if ($dirty -and -not $AllowDirty) {
-    throw "Refusing to update because the repository has uncommitted changes. Commit/stash first, or rerun with -AllowDirty (or WORK_TIMER_ALLOW_DIRTY=1)."
+    $installDir = "$RepoDir-installer"
+    Write-Host "Detected uncommitted changes in $RepoDir"
+    Write-Host "Keeping that folder untouched and using a clean install folder: $installDir"
+  }
+}
+
+if (Test-Path $installDir) {
+  if (-not (Test-Path (Join-Path $installDir ".git"))) {
+    throw "Install directory exists but is not a Git repository: $installDir"
   }
 
-  Write-Host "Existing repository detected. Updating..."
+  Set-Location $installDir
+  $installOrigin = (git remote get-url origin 2>$null).Trim()
+  if (-not $installOrigin -or $installOrigin -notmatch "JoelBondoux/Work-Timer") {
+    throw "Install directory does not look like Work-Timer origin: $installOrigin"
+  }
+
+  Write-Host "Existing install repository detected. Updating..."
   git fetch origin $RepoRef --tags
   git checkout $RepoRef
   git pull --ff-only origin $RepoRef
 } else {
-  Write-Host "No local repository detected. Cloning..."
-  git clone --branch $RepoRef --single-branch $RepoUrl $RepoDir
-  Set-Location $RepoDir
+  Write-Host "No install repository detected. Cloning..."
+  git clone --branch $RepoRef --single-branch $RepoUrl $installDir
+  Set-Location $installDir
 }
 
 if (Test-Path "package-lock.json") {
