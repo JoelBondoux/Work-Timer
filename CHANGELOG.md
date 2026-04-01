@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Added GitHub Actions CI workflow at `.github/workflows/ci.yml` with explicit `Test` and `Build` checks for PR enforcement
 - Added production readiness gate (`npm run check:production`) and CI job (`ProductionReadiness`) to fail PRs that contain common debug/dev-only artifacts
 - Added a dedicated Production Cleanup PR checklist to `docs/contributing.md` to standardize branch/PR workflow for release hardening changes
+- Dependabot now ignores semver-major bumps for `typescript`, `@types/node`, and `vitest` to reduce breaking grouped dev-dependency PRs
 
 ## [1.3.15] - 2026-04-01
 
@@ -109,7 +110,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Installer scripts now block updates on dirty repositories by default and support `WORK_TIMER_SKIP_BUILD` / `WORK_TIMER_SKIP_LINK` for faster non-destructive branch testing
-- Dependabot now ignores semver-major bumps for `typescript`, `@types/node`, and `vitest` to reduce breaking grouped dev-dependency PRs
 - Refactored updater flow into shared logic so both `work-timer update` and the update prompt use the same install path and messaging
 
 ## [1.3.5] - 2026-03-31
