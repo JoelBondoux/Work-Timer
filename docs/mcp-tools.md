@@ -8,6 +8,11 @@ When you add Work-Timer as an MCP server to your AI assistant (Claude Desktop, C
 
 Destructive tools (`project_delete`, `project_merge`, `session_adjust`) support `dry_run` previews and require an exact `confirm_phrase` for execution.
 
+Time handling model:
+- User-facing time entry and responses are local-time oriented.
+- Work-Timer converts time values to UTC for database storage.
+- Query and status outputs are converted back to local time for readability.
+
 ## Help Tool
 
 ### `work_timer_help`

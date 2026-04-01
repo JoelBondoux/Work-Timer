@@ -55,7 +55,7 @@ export type InstallResult = {
 };
 
 const RECOMMENDED_LLM_SYSTEM_PROMPT =
-  'When users ask what Work-Timer can do or how it works, call the work_timer_help tool first, summarize its guidance, and then propose the next best action.';
+  'When users ask what Work-Timer can do or how it works, call the work_timer_help tool first, summarize its guidance, and then propose the next best action. When explaining time behavior, explicitly state that users provide local times, Work-Timer stores normalized UTC, and query/display output is converted back to local time.';
 
 export function getRecommendedLlmSystemPrompt(): string {
   return RECOMMENDED_LLM_SYSTEM_PROMPT;
