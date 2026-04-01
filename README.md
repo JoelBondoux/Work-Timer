@@ -1,6 +1,6 @@
 # Work-Timer
 
-Current version: 1.3.25
+Current version: 1.3.26
 
 A zero-cost, open-source work timer and billing tool built for solo contractors and freelancers. Control it with natural language through any MCP-compatible AI assistant (Claude, Cursor, etc.) or via the command line.
 
@@ -42,13 +42,14 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These scripts auto-detect whether your local `Work-Timer` folder already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production pinning, replace `master` in the URL with a release tag such as `v1.3.25`.
+For production pinning, replace `master` in the URL with a release tag such as `v1.3.26`.
 
 Faster branch-testing options:
 - Skip build: set `WORK_TIMER_SKIP_BUILD=1`
 - Skip global relink: set `WORK_TIMER_SKIP_LINK=1`
-- If `~/Work-Timer` has uncommitted changes, installer keeps it untouched and uses `~/Work-Timer-installer` automatically
-- To force updating a dirty existing repo directly, set `WORK_TIMER_ALLOW_DIRTY=1`
+- Existing valid `~/Work-Timer` installs are updated in place
+- If the target folder exists but is not a Work-Timer install, it is moved to a timestamped backup and installation continues in the requested folder
+- If an existing Work-Timer install has uncommitted changes, installer stops by default; set `WORK_TIMER_ALLOW_DIRTY=1` only when you intentionally want to proceed
 
 > **Windows users:** `npm link` may require adding npm's global bin to your PATH and setting PowerShell's execution policy. See the [Setup Guide](docs/setup.md#npm-link-not-working-on-windows) for details.
 

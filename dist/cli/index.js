@@ -29,7 +29,7 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.25';
+const CLI_VERSION = '1.3.26';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;

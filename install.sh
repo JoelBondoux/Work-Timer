@@ -18,6 +18,28 @@ require_cmd git
 require_cmd node
 require_cmd npm
 
+backup_existing_dir() {
+  local target="$1"
+  local parent
+  local name
+  local stamp
+  local backup
+  local suffix=0
+
+  parent="$(dirname "$target")"
+  name="$(basename "$target")"
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  backup="$parent/${name}-backup-$stamp"
+  while [ -e "$backup" ]; do
+    suffix=$((suffix + 1))
+    backup="$parent/${name}-backup-$stamp-$suffix"
+  done
+
+  cd "$parent"
+  mv "$target" "$backup"
+  echo "Moved existing folder to backup: $backup"
+}
+
 install_dependencies() {
   if [ -f "package-lock.json" ]; then
     echo "Installing dependencies with npm ci..."
@@ -48,62 +70,38 @@ install_dependencies() {
 echo "Work-Timer installer"
 echo "Target directory: $REPO_DIR"
 echo "Source ref: $REPO_REF"
-
-INSTALL_DIR="$REPO_DIR"
+EXISTING_INSTALL=0
 
 if [ -d "$REPO_DIR" ]; then
-  if [ ! -d "$REPO_DIR/.git" ]; then
-    echo "Directory exists but is not a Git repository: $REPO_DIR" >&2
-    exit 1
-  fi
-
-  cd "$REPO_DIR"
-  ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
-  if [[ -z "$ORIGIN_URL" || "$ORIGIN_URL" != *"JoelBondoux/Work-Timer"* ]]; then
-    echo "Existing repository does not look like Work-Timer origin: $ORIGIN_URL" >&2
-    exit 1
-  fi
-
-  if [[ "$ALLOW_DIRTY" != "1" && -n "$(git status --porcelain)" ]]; then
-    INSTALL_DIR="${REPO_DIR}-installer"
-    echo "Detected uncommitted changes in $REPO_DIR"
-    echo "Keeping that folder untouched and using a clean install folder: $INSTALL_DIR"
+  if [ -d "$REPO_DIR/.git" ]; then
+    cd "$REPO_DIR"
+    ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
+    if [[ -n "$ORIGIN_URL" && "$ORIGIN_URL" == *"JoelBondoux/Work-Timer"* ]]; then
+      EXISTING_INSTALL=1
+      if [[ "$ALLOW_DIRTY" != "1" && -n "$(git status --porcelain)" ]]; then
+        echo "Existing Work-Timer installation has uncommitted changes: $REPO_DIR" >&2
+        echo "Clean/stash changes first, or rerun with WORK_TIMER_ALLOW_DIRTY=1 to proceed." >&2
+        exit 1
+      fi
+    else
+      echo "Target folder exists but is not a Work-Timer installation. Backing it up before install..."
+      backup_existing_dir "$REPO_DIR"
+    fi
+  else
+    echo "Target folder exists but is not a Git Work-Timer installation. Backing it up before install..."
+    backup_existing_dir "$REPO_DIR"
   fi
 fi
 
-if [ -d "$INSTALL_DIR" ]; then
-  if [ ! -d "$INSTALL_DIR/.git" ]; then
-    echo "Install directory exists but is not a Git repository: $INSTALL_DIR" >&2
-    exit 1
-  fi
-
-  cd "$INSTALL_DIR"
-  INSTALL_ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
-  if [[ -z "$INSTALL_ORIGIN_URL" || "$INSTALL_ORIGIN_URL" != *"JoelBondoux/Work-Timer"* ]]; then
-    echo "Install directory does not look like Work-Timer origin: $INSTALL_ORIGIN_URL" >&2
-    exit 1
-  fi
-
-  if [[ "$ALLOW_DIRTY" != "1" && -n "$(git status --porcelain)" ]]; then
-    if [[ "$INSTALL_DIR" != "$REPO_DIR" ]]; then
-      echo "Detected uncommitted changes in installer directory. Resetting it to a clean state..."
-      git reset --hard HEAD
-      git clean -fd
-    else
-      echo "Install directory has uncommitted changes: $INSTALL_DIR" >&2
-      echo "Clean it manually or rerun with WORK_TIMER_ALLOW_DIRTY=1 if you intentionally want to keep local edits." >&2
-      exit 1
-    fi
-  fi
-
+if [ "$EXISTING_INSTALL" = "1" ]; then
   echo "Existing install repository detected. Updating..."
   git fetch origin "$REPO_REF" --tags
   git checkout "$REPO_REF"
   git pull --ff-only origin "$REPO_REF"
 else
-  echo "No install repository detected. Cloning..."
-  git clone --branch "$REPO_REF" --single-branch "$REPO_URL" "$INSTALL_DIR"
-  cd "$INSTALL_DIR"
+  echo "No existing Work-Timer install detected. Cloning into target directory..."
+  git clone --branch "$REPO_REF" --single-branch "$REPO_URL" "$REPO_DIR"
+  cd "$REPO_DIR"
 fi
 
 install_dependencies
