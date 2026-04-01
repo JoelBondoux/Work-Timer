@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 - Added production-ready root installers (`install.ps1`, `install.sh`) with prerequisite checks, safe existing-repo validation, deterministic dependency install (`npm ci` when lockfile exists), and optional ref pinning via `WORK_TIMER_REPO_REF`
 - Added repository instruction files for coding assistants: `.github/copilot-instructions.md` and `CLAUDE.md`, aligned to production-only `master` workflow
+- Added GitHub Actions CI workflow at `.github/workflows/ci.yml` with explicit `Test` and `Build` checks for PR enforcement
 
 ## [1.3.15] - 2026-04-01
 
