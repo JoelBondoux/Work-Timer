@@ -20,6 +20,7 @@
 - Keep changes focused and minimal.
 - Do not bypass safety behavior in timer, billing, export, or destructive flows.
 - Preserve current CLI and MCP behavior unless the task explicitly changes it.
+- For user-facing PowerShell/terminal output formatting, follow `docs/powershell-output-style-guide.md` as the default standard for current and future output UX changes.
 
 ## Safety And Security First Policy
 

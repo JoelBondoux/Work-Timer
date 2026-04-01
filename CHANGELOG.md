@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.31] - 2026-04-01
+
+### Added
+
+- Added `docs/powershell-output-style-guide.md` as the canonical style guide for current and future user-facing PowerShell/terminal output UX.
+
+### Changed
+
+- Updated contributor and agent policy docs to require the PowerShell output style guide when implementing output formatting changes.
+
 ## [1.3.30] - 2026-04-01
 
 ### Changed

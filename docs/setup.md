@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These install scripts automatically detect whether `~/Work-Timer` already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.30`.
+For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.31`.
 
 Installer behavior notes:
 - Existing valid Work-Timer installs are updated in place.

@@ -235,6 +235,7 @@ Use this checklist when a PR's goal is to remove debug/dev-only artifacts before
 - Use `async/await` consistently (not `.then()`)
 - Prefer descriptive variable names over abbreviations
 - Keep functions focused — one function, one responsibility
+- For user-facing PowerShell/terminal output UX, follow `docs/powershell-output-style-guide.md`.
 
 ### Commit Messages
 
