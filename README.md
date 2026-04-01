@@ -6,6 +6,7 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
 - **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
+- **Built-in MCP help** — `work_timer_help` explains capabilities, workflows, and example usage for LLMs/users
 - **MCP auto-installer** — Programmatically detects and patches supported local MCP client configs with backup + dry-run support
 - **CLI** — Full command-line interface for quick manual use
 - **Built-in maintenance** — Includes `work-timer update`, `work-timer uninstall`, and update-available prompts
@@ -114,6 +115,7 @@ Then just talk naturally:
 > "Pause the timer"
 > "How much time have I spent on Website Redesign this week?"
 > "Export my billing for January as Excel"
+> "How does Work-Timer work?"
 
 ## Documentation
 
@@ -157,7 +159,7 @@ src/
     presets.ts      # Accounting software export presets
     format.ts       # Text formatting for output
   mcp/
-    server.ts       # MCP server with 20 tool definitions
+    server.ts       # MCP server with 21 tool definitions
   cli/
     index.ts        # CLI entry point with Commander.js
 ```

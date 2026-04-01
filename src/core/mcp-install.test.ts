@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import {
   applyJsonMcpInstall,
   discoverMcpTargets,
+  getManualInstallInstructions,
+  getRecommendedLlmSystemPrompt,
   parseClientIds,
   upsertMcpServerConfig,
 } from '../cli/mcp-install.js';
@@ -167,5 +169,46 @@ describe('applyJsonMcpInstall', () => {
     expect(result.backupPath).toBeUndefined();
     const backups = readdirSync(dir).filter((name) => name.startsWith('mcp.json.bak.'));
     expect(backups.length).toBe(0);
+  });
+});
+
+describe('getManualInstallInstructions', () => {
+  it('returns a non-empty recommended system prompt', () => {
+    const prompt = getRecommendedLlmSystemPrompt();
+    expect(prompt.toLowerCase()).toContain('work_timer_help');
+  });
+
+  it('returns JSON config instructions for file-based clients', () => {
+    const instructions = getManualInstallInstructions(
+      {
+        id: 'vscode',
+        label: 'VS Code',
+        kind: 'json',
+        configPath: '/tmp/mcp.json',
+        schema: 'copilot',
+        exists: false,
+      },
+      '/tmp/work-timer/dist/mcp/server.js'
+    );
+
+    expect(instructions[0]).toContain('/tmp/mcp.json');
+    expect(instructions[1]).toContain('work-timer');
+    expect(instructions[1]).toContain('/tmp/work-timer/dist/mcp/server.js');
+    expect(instructions.some((line) => line.includes('work_timer_help'))).toBe(true);
+  });
+
+  it('returns command instructions for command-based clients', () => {
+    const instructions = getManualInstallInstructions(
+      {
+        id: 'claude-code',
+        label: 'Claude Code',
+        kind: 'command',
+        command: 'claude',
+        args: ['mcp', 'add', 'work-timer', '--', 'node'],
+      },
+      '/tmp/work-timer/dist/mcp/server.js'
+    );
+
+    expect(instructions[0]).toContain('claude mcp add work-timer -- node /tmp/work-timer/dist/mcp/server.js');
   });
 });

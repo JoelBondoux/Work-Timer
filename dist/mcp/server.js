@@ -20,11 +20,88 @@ function errorResult(message) {
 }
 const server = new McpServer({
     name: 'work-timer',
-    version: '1.3.10',
+    version: '1.3.14',
 });
 const nonNegativeFiniteNumber = z.number().finite().nonnegative();
 const nonNegativeInteger = z.number().int().nonnegative();
 const positiveInteger = z.number().int().positive();
+const HELP_TOPICS = ['overview', 'timers', 'projects', 'billing', 'exports', 'setup', 'safety', 'examples'];
+function getWorkTimerHelp(topic) {
+    if (topic === 'timers') {
+        return [
+            'Timer workflow:',
+            '- Start: timer_start (creates project when needed)',
+            '- Pause/resume: timer_pause / timer_resume',
+            '- Stop: timer_stop',
+            '- Check active timers: timer_status',
+            '- Multiple projects can run in parallel if needed',
+        ].join('\n');
+    }
+    if (topic === 'projects') {
+        return [
+            'Project management:',
+            '- Create/update/list/rename: project_create, project_update, project_list, project_rename',
+            '- Delete and merge are safety-gated: project_delete, project_merge',
+            '- Use dry_run first on destructive actions',
+        ].join('\n');
+    }
+    if (topic === 'billing') {
+        return [
+            'Billing and records:',
+            '- Query detailed records: time_query',
+            '- Summarize unbilled/unpaid: billing_summary',
+            '- Mark sessions: mark_invoiced, mark_paid',
+            '- Adjust times safely: session_adjust (supports dry_run + confirm_phrase)',
+        ].join('\n');
+    }
+    if (topic === 'exports') {
+        return [
+            'Export options:',
+            '- CSV: export_csv',
+            '- Excel workbook: export_xlsx',
+            '- Accounting presets: export_preset (quickbooks, xero, freshbooks, sage, myob)',
+        ].join('\n');
+    }
+    if (topic === 'setup') {
+        return [
+            'Setup checklist:',
+            '- Configure TURSO_DATABASE_URL and TURSO_AUTH_TOKEN (or use work-timer setup in CLI)',
+            '- Register MCP server in your client',
+            '- Validate by calling timer_status or project_list',
+        ].join('\n');
+    }
+    if (topic === 'safety') {
+        return [
+            'Safety model:',
+            '- Destructive tools require an exact confirm_phrase',
+            '- dry_run is available to preview impact before mutation',
+            '- Prefer dry_run for project_delete, project_merge, and session_adjust',
+        ].join('\n');
+    }
+    if (topic === 'examples') {
+        return [
+            'Example requests:',
+            '- "Start a timer for Client Alpha at 150 USD/hr"',
+            '- "Pause the timer for Client Alpha"',
+            '- "Show unpaid totals for March"',
+            '- "Export Xero CSV for last month to reports/xero.csv"',
+        ].join('\n');
+    }
+    return [
+        'Work-Timer MCP overview:',
+        '- Core timers: start, pause, resume, stop, status',
+        '- Projects: create/update/list/rename/delete/merge',
+        '- Billing + sessions: query, summary, invoicing/payment, session_adjust',
+        '- Exports: csv, xlsx, accounting presets',
+        '- Safety: destructive actions support dry_run and require confirm_phrase',
+        '- For deeper guidance, call work_timer_help with topic: timers, projects, billing, exports, setup, safety, examples',
+    ].join('\n');
+}
+server.tool('work_timer_help', 'Return a beginner-friendly guide to Work-Timer capabilities and recommended usage patterns. Use this tool first when users ask what Work-Timer can do or how it works.', {
+    topic: z.enum(HELP_TOPICS).optional().describe('Optional help topic. Defaults to overview.'),
+}, async ({ topic }) => {
+    return textResult(getWorkTimerHelp(topic ?? 'overview'));
+});
 // --- Timer tools ---
 server.tool('timer_start', 'Start a timer for a project. Creates the project if it does not exist. If no exact match is found but similar project names exist, returns a warning listing them — unless confirm_new_project is true.', {
     project: z.string().describe('Project name'),

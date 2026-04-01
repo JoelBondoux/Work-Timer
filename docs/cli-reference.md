@@ -13,6 +13,7 @@ work-timer update
 ```
 
 Behavior:
+- Prints beginner-friendly step-by-step progress messages during update
 - Runs `npm install -g https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master`
 - Falls back to Node's bundled `npm-cli.js` if `npm` is not resolvable on PATH
 - On Windows, auto-adds npm global bin (from `npm prefix -g`) to user PATH when missing
@@ -21,8 +22,9 @@ Behavior:
 - Useful when your MCP client points to a hardcoded server path and you want the newest release quickly
 
 Update notifications:
-- Most interactive CLI commands check daily for newer GitHub builds
+- `work-timer start` and `work-timer stop` check daily for newer GitHub builds
 - If a newer version exists, CLI announces it and asks `Update now? [y/N]`
+- If you skip that prompt, the same version is not announced again; you are prompted only when a newer version appears
 - Set `WORK_TIMER_DISABLE_UPDATE_CHECK=1` to disable this behavior
 
 ### `work-timer uninstall`
@@ -72,6 +74,22 @@ Behavior:
 - Existing config files are backed up before rewrite (`.bak.<timestamp>`).
 - `claude-code` uses command-mode install via `claude mcp add ...`.
 - `chatgpt-desktop` is reported as manual because connector creation is currently in-app.
+- If auto-install fails, CLI prints client-specific manual follow-up steps to complete setup.
+- Prints a beginner-friendly run summary with counts for updated/unchanged/skipped/error results.
+- Prints a recommended client system prompt that tells LLMs to call `work_timer_help` first for capability questions.
+
+### `work-timer setup`
+
+Interactive guided setup for Turso credentials.
+
+```bash
+work-timer setup
+```
+
+Behavior:
+- Prints explicit step-by-step progress while collecting credentials and writing config.
+- Hides token input while typing.
+- Ends with a short quick-start walkthrough of first commands to run.
 
 ## Timer Commands
 

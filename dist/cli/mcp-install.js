@@ -2,6 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
+const RECOMMENDED_LLM_SYSTEM_PROMPT = 'When users ask what Work-Timer can do or how it works, call the work_timer_help tool first, summarize its guidance, and then propose the next best action.';
+export function getRecommendedLlmSystemPrompt() {
+    return RECOMMENDED_LLM_SYSTEM_PROMPT;
+}
 function isJsonObject(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -247,6 +251,42 @@ export function applyCommandMcpInstall(input) {
         status: 'error',
         message: output || `Command failed with status ${String(result.status)}`,
     };
+}
+function getManualSnippet(target, serverPath) {
+    if (target.schema === 'claude') {
+        return JSON.stringify({
+            mcpServers: {
+                'work-timer': createClaudeEntry(serverPath),
+            },
+        }, null, 2);
+    }
+    return JSON.stringify({
+        servers: {
+            'work-timer': createCopilotEntry(serverPath),
+        },
+    }, null, 2);
+}
+export function getManualInstallInstructions(target, serverPath) {
+    if (target.kind === 'json') {
+        return [
+            `Open or create: ${target.configPath}`,
+            `Add this entry and save: ${getManualSnippet(target, serverPath)}`,
+            `If your client supports a custom system prompt, add: ${RECOMMENDED_LLM_SYSTEM_PROMPT}`,
+            'Restart the client app so it reloads MCP configuration.',
+        ];
+    }
+    if (target.kind === 'command') {
+        return [
+            `Run this command manually: ${target.command} ${[...target.args, serverPath].join(' ')}`,
+            `If your client supports a custom system prompt, add: ${RECOMMENDED_LLM_SYSTEM_PROMPT}`,
+            'Then reopen your client and verify the work-timer MCP server is enabled.',
+        ];
+    }
+    return [
+        target.notes,
+        `Use this command as your MCP connector value: node ${serverPath}`,
+        `If your client supports a custom system prompt, add: ${RECOMMENDED_LLM_SYSTEM_PROMPT}`,
+    ];
 }
 export function parseClientIds(input) {
     const items = input

@@ -18,7 +18,7 @@ import { Writable } from 'node:stream';
 import { spawnSync } from 'node:child_process';
 import { get } from 'node:https';
 import { fileURLToPath } from 'node:url';
-import { applyCommandMcpInstall, applyJsonMcpInstall, discoverMcpTargets, parseClientIds, } from './mcp-install.js';
+import { applyCommandMcpInstall, applyJsonMcpInstall, discoverMcpTargets, getManualInstallInstructions, getRecommendedLlmSystemPrompt, parseClientIds, } from './mcp-install.js';
 function prompt(question) {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
     return new Promise((resolve) => {
@@ -29,10 +29,26 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.10';
+const CLI_VERSION = '1.3.14';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+function printPostInstallQuickStart() {
+    console.log('');
+    console.log('Quick Start (Beginner Friendly)');
+    console.log('===============================');
+    console.log('1) Start timing work on a project:');
+    console.log('   work-timer start "Client Alpha"');
+    console.log('2) Check what is currently running:');
+    console.log('   work-timer status');
+    console.log('3) Stop timing when done:');
+    console.log('   work-timer stop');
+    console.log('4) Review logged time and totals:');
+    console.log('   work-timer query');
+    console.log('5) Optional: connect to local AI clients (MCP):');
+    console.log('   work-timer mcp install --dry-run');
+    console.log('   work-timer mcp install');
+}
 function parseNonNegativeNumber(value, label) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed < 0) {
@@ -211,32 +227,39 @@ async function fetchLatestVersionFromGitHub() {
         return null;
     }
 }
-function shouldSkipUpdateAnnouncement(argv) {
+function shouldAnnounceUpdateForCommand(argv) {
     if (argv.includes('--help') || argv.includes('-h') || argv.includes('--version') || argv.includes('-V')) {
-        return true;
+        return false;
     }
     const firstArg = argv.find((arg) => !arg.startsWith('-'));
     if (!firstArg)
-        return true;
-    return firstArg === 'update' || firstArg === 'uninstall';
+        return false;
+    return firstArg === 'start' || firstArg === 'stop';
 }
 function performGlobalUpdate() {
+    console.log('Starting Work-Timer update process...');
+    console.log('Step 1/4: Checking npm global binary path configuration...');
     const pathFix = ensureWindowsNpmBinOnPath();
     if (pathFix?.addedToUserPath) {
         console.log(`Added npm global bin to user PATH: ${pathFix.npmBin}`);
         console.log('Open a new terminal after this command to use updated PATH in new sessions.');
     }
-    console.log('Updating Work-Timer from GitHub tarball...');
+    else {
+        console.log('npm global binary path looks good.');
+    }
+    console.log('Step 2/4: Installing latest Work-Timer package from GitHub...');
     const install = runNpm(['install', '-g', GITHUB_TARBALL_URL]);
     if (install.status !== 0) {
         const details = [install.stderr.trim(), install.stdout.trim()].filter(Boolean).join('\n');
         throw new Error(details || 'npm install failed');
     }
+    console.log('Step 3/4: Resolving global npm install location...');
     const root = runNpm(['root', '-g']);
     if (root.status !== 0) {
         throw new Error(root.stderr.trim() || 'npm root failed');
     }
     const globalRoot = root.stdout.trim().split(/\r?\n/).pop() ?? root.stdout.trim();
+    console.log('Step 4/4: Calculating installed MCP server path...');
     return join(globalRoot, 'work-timer', 'dist', 'mcp', 'server.js');
 }
 function getBundledMcpServerPath() {
@@ -248,7 +271,7 @@ async function maybeAnnounceUpdate(argv) {
         return;
     if (process.env.CI === 'true')
         return;
-    if (shouldSkipUpdateAnnouncement(argv))
+    if (!shouldAnnounceUpdateForCommand(argv))
         return;
     const cache = readUpdateCheckCache();
     const now = Date.now();
@@ -266,6 +289,9 @@ async function maybeAnnounceUpdate(argv) {
     if (!latestVersion || !isVersionNewer(latestVersion, CLI_VERSION)) {
         return;
     }
+    if (cache.dismissedVersion === latestVersion) {
+        return;
+    }
     console.log(`A new Work-Timer build is available: ${latestVersion} (current: ${CLI_VERSION}).`);
     if (!process.stdin.isTTY || !process.stdout.isTTY) {
         console.log('Run `work-timer update` to install it.');
@@ -274,6 +300,11 @@ async function maybeAnnounceUpdate(argv) {
     const answer = await prompt('Update now? [y/N]: ');
     if (!/^y(es)?$/i.test(answer.trim())) {
         console.log('Skipped update. You can run `work-timer update` at any time.');
+        writeUpdateCheckCache({
+            lastCheckedAt: cache.lastCheckedAt ?? new Date(now).toISOString(),
+            latestVersion,
+            dismissedVersion: latestVersion,
+        });
         return;
     }
     try {
@@ -356,8 +387,13 @@ program
             resolve(answer);
         });
     });
-    console.log('Work-Timer Setup');
+    console.log('Work-Timer Guided Setup');
     console.log('================');
+    console.log('');
+    console.log('This guided flow will:');
+    console.log('- collect your Turso database URL and token');
+    console.log('- save them to your local Work-Timer config');
+    console.log('- show exactly what to run next');
     console.log('');
     console.log('You need a free Turso account to store your data in the cloud.');
     console.log('1. Sign up at https://turso.tech (free tier: 9GB, 500M reads/mo)');
@@ -367,21 +403,29 @@ program
     console.log('5. Run: turso db show work-timer --url   (copy the URL)');
     console.log('6. Run: turso db tokens create work-timer   (copy the token)');
     console.log('');
-    const url = await ask('Turso database URL: ');
-    const token = await askSecret('Turso auth token: ');
+    console.log('Step 1/3: Collect credentials.');
+    const url = await ask('Turso database URL (example: libsql://your-db.turso.io): ');
+    const token = await askSecret('Turso auth token (input is hidden): ');
     if (!url || !token) {
         console.error('Both URL and token are required.');
         rl.close();
         process.exit(1);
     }
+    console.log('Step 2/3: Preparing config directory...');
     const configDir = join(homedir(), '.work-timer');
     if (!existsSync(configDir)) {
         mkdirSync(configDir, { recursive: true, mode: 0o700 });
+        console.log(`Created directory: ${configDir}`);
     }
+    else {
+        console.log(`Using existing directory: ${configDir}`);
+    }
+    console.log('Step 3/3: Writing credentials to config file...');
     const configPath = join(configDir, 'config.json');
     writeFileSync(configPath, JSON.stringify({ turso_url: url, turso_auth_token: token }, null, 2), { mode: 0o600 });
     console.log(`\nConfig saved to ${configPath}`);
-    console.log('Work-Timer is ready! Try: work-timer start my-project');
+    console.log('Setup complete. Work-Timer is now ready to use.');
+    printPostInstallQuickStart();
     rl.close();
 });
 // --- MCP client installation ---
@@ -421,6 +465,8 @@ mcpCmd
             console.log('No matching MCP clients selected.');
             return;
         }
+        console.log('Starting MCP client installation...');
+        console.log(`Found ${targets.length} target(s) to process.`);
         console.log(`Using MCP server path: ${serverPath}`);
         const results = targets.map((target) => {
             if (target.kind === 'json') {
@@ -450,7 +496,30 @@ mcpCmd
             if (result.backupPath) {
                 console.log(`  backup: ${result.backupPath}`);
             }
+            if (result.status === 'error' || result.status === 'skipped-missing') {
+                const manualSteps = getManualInstallInstructions(result.target, serverPath);
+                console.log('  manual follow-up:');
+                for (const step of manualSteps) {
+                    console.log(`    - ${step}`);
+                }
+            }
         }
+        const updatedCount = results.filter((result) => result.status === 'updated' || result.status === 'created').length;
+        const unchangedCount = results.filter((result) => result.status === 'unchanged').length;
+        const skippedCount = results.filter((result) => result.status === 'skipped-missing' || result.status === 'skipped-manual').length;
+        const errorCount = results.filter((result) => result.status === 'error').length;
+        console.log('');
+        console.log('MCP installation summary:');
+        console.log(`- updated/created: ${updatedCount}`);
+        console.log(`- unchanged: ${unchangedCount}`);
+        console.log(`- skipped: ${skippedCount}`);
+        console.log(`- errors: ${errorCount}`);
+        if (errorCount === 0) {
+            console.log('Done. If a client was updated, restart that client to load new MCP settings.');
+        }
+        console.log('');
+        console.log('Recommended client system prompt (if your LLM app supports one):');
+        console.log(getRecommendedLlmSystemPrompt());
         const errors = results.filter((result) => result.status === 'error');
         if (errors.length > 0) {
             process.exit(1);

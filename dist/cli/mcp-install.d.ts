@@ -29,6 +29,7 @@ export type InstallResult = {
     message: string;
     backupPath?: string;
 };
+export declare function getRecommendedLlmSystemPrompt(): string;
 export declare function upsertMcpServerConfig(input: {
     sourceText: string;
     schema: JsonSchema;
@@ -52,5 +53,6 @@ export declare function applyCommandMcpInstall(input: {
     serverPath: string;
     dryRun: boolean;
 }): InstallResult;
+export declare function getManualInstallInstructions(target: McpTarget, serverPath: string): string[];
 export declare function parseClientIds(input: string): McpClientId[];
 export {};

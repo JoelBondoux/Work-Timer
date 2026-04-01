@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.14] - 2026-04-01
+
+### Added
+
+- Added new MCP tool `work_timer_help` that returns a beginner-friendly capabilities guide and topic-specific usage help
+- `work-timer mcp install` now prints a recommended LLM system prompt so clients can answer "how it works" questions more reliably
+- Manual fallback instructions now include the same recommended system prompt guidance
+
+### Changed
+
+- MCP docs now include the new help tool and updated tool count
+
+## [1.3.13] - 2026-04-01
+
+### Changed
+
+- Made setup/update/MCP install flows more verbose with step-by-step status output for beginner clarity
+- `work-timer setup` now ends with a short quick-start usage walkthrough
+- `work-timer mcp install` now prints an end-of-run summary (updated, unchanged, skipped, errors)
+
+## [1.3.12] - 2026-04-01
+
+### Added
+
+- `work-timer mcp install` now prints client-specific manual follow-up instructions when automated installation fails
+- Manual fallback instructions are shown for config-write failures and missing-config-file cases
+
+## [1.3.11] - 2026-04-01
+
+### Changed
+
+- Update announcements now trigger only on `work-timer start` and `work-timer stop`
+- If an update prompt is dismissed, that same version is not announced again
+- A new announcement is shown only when a newer version than the dismissed one becomes available
+
 ## [1.3.10] - 2026-04-01
 
 ### Added

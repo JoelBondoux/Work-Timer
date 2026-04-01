@@ -102,6 +102,8 @@ work-timer setup
 
 This will prompt you for your Turso URL and token, and save them to `~/.work-timer/config.json`.
 The auth token input is hidden while you type.
+The setup output is intentionally step-by-step so beginners can see what happens at each stage.
+When setup finishes, Work-Timer prints a short quick-start guide with first commands to run.
 
 ### Option B: Environment Variables
 
@@ -168,6 +170,7 @@ Supported client IDs: `claude-desktop`, `cursor`, `vscode`, `vscode-insiders`, `
 Notes:
 - Existing JSON configs are backed up automatically before rewrite (`.bak.<timestamp>`).
 - ChatGPT Desktop currently remains manual (in-app connector flow) and is reported as manual by the installer.
+- The installer prints a recommended system prompt you can paste into clients that support custom instructions.
 
 ### Option B: Manual client setup
 
