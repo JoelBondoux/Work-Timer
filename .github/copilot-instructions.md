@@ -21,6 +21,13 @@
 - Do not bypass safety behavior in timer, billing, export, or destructive flows.
 - Preserve current CLI and MCP behavior unless the task explicitly changes it.
 
+## Local Staging Workspace Rules
+
+- Use `staging/` for local-only test notes, debug helpers, and temporary artifacts.
+- Treat `staging/` as non-production and non-release content.
+- Do not commit files from `staging/`.
+- Do not reference `staging/` as a required documentation location; durable docs must live under `docs/`.
+
 ## Required Validation Before PR
 
 - Run `npm test` and `npm run build`.

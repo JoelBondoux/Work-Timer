@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.21] - 2026-04-01
+
+### Added
+
+- Added a local-only `staging/` workspace convention (gitignored) for ad-hoc testing/debugging artifacts that should never be committed.
+- Documented the staging workspace usage guidance in `docs/contributing.md`.
+
 ## [1.3.20] - 2026-04-01
 
 ### Fixed
