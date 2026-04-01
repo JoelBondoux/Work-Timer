@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.27] - 2026-04-01
+
+### Added
+
+- Added `work-timer doctor install-path` command to inspect local install path state and preview installer behavior (update in place, backup-then-install, or stop-on-dirty).
+
+### Changed
+
+- Installer now prompts when the requested version is already installed, asking whether to run a repair flow or cancel.
+- Added non-interactive control via `WORK_TIMER_REPAIR_MODE=repair|cancel` for automation scenarios.
+
 ## [1.3.26] - 2026-04-01
 
 ### Changed

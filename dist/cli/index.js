@@ -29,7 +29,7 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.26';
+const CLI_VERSION = '1.3.27';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -279,6 +279,39 @@ function getBundledMcpServerPath() {
     const currentFilePath = fileURLToPath(import.meta.url);
     return join(dirname(currentFilePath), '..', 'mcp', 'server.js');
 }
+function inspectInstallPath(pathToInspect) {
+    const resolvedPath = resolve(pathToInspect);
+    const exists = existsSync(resolvedPath);
+    const hasGit = exists && existsSync(join(resolvedPath, '.git'));
+    let originUrl;
+    let dirty;
+    let looksLikeWorkTimer = false;
+    if (hasGit) {
+        looksLikeWorkTimer = looksLikeWorkTimerRepo(resolvedPath);
+        const originResult = spawnSync('git', ['-C', resolvedPath, 'remote', 'get-url', 'origin'], {
+            encoding: 'utf-8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        if (originResult.status === 0) {
+            originUrl = (originResult.stdout ?? '').trim();
+        }
+        const statusResult = spawnSync('git', ['-C', resolvedPath, 'status', '--porcelain'], {
+            encoding: 'utf-8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        if (statusResult.status === 0) {
+            dirty = (statusResult.stdout ?? '').trim().length > 0;
+        }
+    }
+    return {
+        path: resolvedPath,
+        exists,
+        hasGit,
+        looksLikeWorkTimer,
+        originUrl,
+        dirty,
+    };
+}
 async function maybeAnnounceUpdate(argv) {
     if (process.env.WORK_TIMER_DISABLE_UPDATE_CHECK === '1')
         return;
@@ -346,6 +379,48 @@ program
     }
     catch (e) {
         console.error(`Update failed: ${e.message}`);
+        process.exit(1);
+    }
+});
+const doctorCmd = program.command('doctor').description('Inspect local Work-Timer installation state');
+doctorCmd
+    .command('install-path')
+    .description('Show install-path diagnostics and suggested next action')
+    .option('--path <path>', 'Path to inspect (defaults to ~/Work-Timer)')
+    .action((opts) => {
+    try {
+        const inspectPath = opts.path ?? join(homedir(), 'Work-Timer');
+        const info = inspectInstallPath(inspectPath);
+        console.log('Install path diagnostics:');
+        console.log(`- path: ${info.path}`);
+        console.log(`- exists: ${info.exists ? 'yes' : 'no'}`);
+        console.log(`- git repository: ${info.hasGit ? 'yes' : 'no'}`);
+        console.log(`- looks like Work-Timer install: ${info.looksLikeWorkTimer ? 'yes' : 'no'}`);
+        if (info.originUrl) {
+            console.log(`- git origin: ${info.originUrl}`);
+        }
+        if (typeof info.dirty === 'boolean') {
+            console.log(`- uncommitted changes: ${info.dirty ? 'yes' : 'no'}`);
+        }
+        console.log('');
+        console.log('Suggested installer behavior:');
+        if (!info.exists) {
+            console.log('- Fresh install into this path.');
+        }
+        else if (!info.hasGit || !info.looksLikeWorkTimer) {
+            console.log('- Existing folder will be backed up with a timestamped suffix, then Work-Timer will install into this path.');
+        }
+        else if (info.dirty) {
+            console.log('- Installer will stop by default because this install has local changes.');
+            console.log('- Use WORK_TIMER_ALLOW_DIRTY=1 only if you intentionally want to proceed.');
+        }
+        else {
+            console.log('- Existing Work-Timer install will be updated in place.');
+            console.log('- If the version is already current, installer will ask whether to repair or cancel.');
+        }
+    }
+    catch (e) {
+        console.error(e.message);
         process.exit(1);
     }
 });
