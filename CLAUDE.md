@@ -21,6 +21,14 @@
 - Add tests for logic changes.
 - Update docs for user-facing changes.
 
+## Safety And Security First Policy
+
+- Treat user data protection, billing correctness, and destructive-operation safety as top priority over speed.
+- Default to least-privilege and non-destructive behavior: prefer dry-run, explicit confirmations, and reversible changes.
+- Never weaken or bypass safety checks, authorization boundaries, or validation logic unless explicitly required and documented.
+- If a change introduces meaningful security, privacy, or integrity risk, stop and escalate with options, risks, and a recommended safe default.
+- Call out security-impacting changes in PR summaries and include focused validation steps.
+
 ## Required Validation
 
 - Run `npm test` and `npm run build` before opening or updating a PR.
@@ -51,6 +59,13 @@
 ## Safety Rule
 
 If a change is not production-ready, keep it on a branch and do not merge to `master`.
+
+## Merge Administration Policy
+
+- The coding agent administers merge readiness by default.
+- The agent should run review + validation, decide when the outcome is clear, and proceed without waiting for user confirmation in routine cases.
+- The agent should escalate to the user only when there is a material choice (trade-off between valid options), unresolved risk, or policy ambiguity.
+- When escalating, present concise options, risks, and a recommended default.
 
 ## PR Review Automation
 
