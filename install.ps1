@@ -33,11 +33,27 @@ function Install-Dependencies {
     } catch {
       if (($env:OS -eq "Windows_NT") -and (Test-Path "node_modules")) {
         Write-Host "npm ci failed on Windows (possible file lock). Retrying once after clearing node_modules..."
-        Remove-Item "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
+        $attempt = 0
+        while ((Test-Path "node_modules") -and ($attempt -lt 3)) {
+          Remove-Item "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
+          if (Test-Path "node_modules") {
+            cmd /c rmdir /s /q "node_modules" 2>$null
+          }
+          if (-not (Test-Path "node_modules")) {
+            break
+          }
+          $attempt += 1
+          Start-Sleep -Seconds 2
+        }
+
         Start-Sleep -Seconds 2
         & npm ci
         if ($LASTEXITCODE -ne 0) {
-          throw "npm ci retry failed (exit code: $LASTEXITCODE)"
+          Write-Host "npm ci retry failed on Windows. Falling back to npm install..."
+          & npm install
+          if ($LASTEXITCODE -ne 0) {
+            throw "npm install fallback failed (exit code: $LASTEXITCODE)"
+          }
         }
       } else {
         throw
