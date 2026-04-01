@@ -22,14 +22,19 @@ install_dependencies() {
   if [ -f "package-lock.json" ]; then
     echo "Installing dependencies with npm ci..."
     if ! npm ci; then
-      if [ "$(uname -s 2>/dev/null || echo unknown)" = "MINGW64_NT" ] || [ "$(uname -s 2>/dev/null || echo unknown)" = "MSYS_NT" ] || [ "$(uname -s 2>/dev/null || echo unknown)" = "CYGWIN_NT" ]; then
-        echo "npm ci failed on Windows-like shell (possible file lock). Retrying once after clearing node_modules..."
-        rm -rf node_modules || true
-        sleep 2
-        npm ci
-      else
-        return 1
-      fi
+      local uname_s
+      uname_s="$(uname -s 2>/dev/null || echo unknown)"
+      case "$uname_s" in
+        MINGW*|MSYS*|CYGWIN*)
+          echo "npm ci failed on Windows-like shell (possible file lock). Retrying once after clearing node_modules..."
+          rm -rf node_modules || true
+          sleep 2
+          npm ci
+          ;;
+        *)
+          return 1
+          ;;
+      esac
     fi
   else
     echo "Installing dependencies with npm install..."

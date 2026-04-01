@@ -48,6 +48,13 @@ npm run test:watch
 npm run build
 ```
 
+### Local Staging Workspace (Not Committed)
+
+- Use the repo-root `staging/` folder for local testing artifacts you never want in `master`.
+- This folder is gitignored by default.
+- Typical contents: manual test notes, temporary debug scripts, local env snapshots, ad-hoc export files.
+- Do not put required project documentation in `staging/`; keep durable docs under `docs/`.
+
 ### Running Without Turso
 
 For development and testing, you don't need a Turso account. The test suite uses in-memory SQLite databases via `@libsql/client`'s `:memory:` URL.

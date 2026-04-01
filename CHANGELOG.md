@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - Added explicit safety-and-security-first policy guidance for repository AI agents in `.github/copilot-instructions.md` and `CLAUDE.md`.
 - Added merge-administration policy instructing agents to proceed by default and escalate only for material choices/risks.
 - Added cross-reference in `docs/contributing.md` to the canonical AI policy files to keep agent governance discoverable and consistent.
+- Added a local-only `staging/` workspace convention (gitignored) for ad-hoc testing/debugging artifacts that should never be committed.
+- Documented the staging workspace usage guidance in `docs/contributing.md`.
 
 ## [1.3.20] - 2026-04-01
 

@@ -29,6 +29,13 @@
 - If a change introduces meaningful security, privacy, or integrity risk, stop and escalate with options, risks, and a recommended safe default.
 - Call out security-impacting changes in PR summaries and include focused validation steps.
 
+## Local Staging Workspace Rules
+
+- Use `staging/` for local-only test notes, debug helpers, and temporary artifacts.
+- Treat `staging/` as non-production and non-release content.
+- Do not commit files from `staging/`.
+- Do not reference `staging/` as a required documentation location; durable docs must live under `docs/`.
+
 ## Required Validation
 
 - Run `npm test` and `npm run build` before opening or updating a PR.
