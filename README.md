@@ -44,7 +44,8 @@ For production pinning, replace `master` in the URL with a release tag such as `
 Faster branch-testing options:
 - Skip build: set `WORK_TIMER_SKIP_BUILD=1`
 - Skip global relink: set `WORK_TIMER_SKIP_LINK=1`
-- Prevent updates on dirty repos by default; override with `WORK_TIMER_ALLOW_DIRTY=1`
+- If `~/Work-Timer` has uncommitted changes, installer keeps it untouched and uses `~/Work-Timer-installer` automatically
+- To force updating a dirty existing repo directly, set `WORK_TIMER_ALLOW_DIRTY=1`
 
 > **Windows users:** `npm link` may require adding npm's global bin to your PATH and setting PowerShell's execution policy. See the [Setup Guide](docs/setup.md#npm-link-not-working-on-windows) for details.
 

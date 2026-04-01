@@ -29,8 +29,8 @@ These install scripts automatically detect whether `~/Work-Timer` already exists
 For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.16`.
 
 Installer behavior notes:
-- Existing repositories with uncommitted changes are blocked by default to avoid accidental overwrite.
-- Override dirty-repo blocking only when intentional: `WORK_TIMER_ALLOW_DIRTY=1`.
+- Existing repositories with uncommitted changes are kept untouched by default; installer uses a clean sibling folder (`*-installer`) automatically.
+- To force updating a dirty existing repo directly, set `WORK_TIMER_ALLOW_DIRTY=1`.
 - Speed up branch-switch testing by skipping build and relink:
   - `WORK_TIMER_SKIP_BUILD=1`
   - `WORK_TIMER_SKIP_LINK=1`
