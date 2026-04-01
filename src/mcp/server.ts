@@ -61,6 +61,7 @@ function getWorkTimerHelp(topic: (typeof HELP_TOPICS)[number]): string {
       '- Stop: timer_stop',
       '- Check active timers: timer_status',
       '- Multiple projects can run in parallel if needed',
+      '- Time handling: users work in local time; Work-Timer normalizes to UTC for storage and converts back to local time in tool responses and queries',
     ].join('\n');
   }
 
@@ -80,6 +81,7 @@ function getWorkTimerHelp(topic: (typeof HELP_TOPICS)[number]): string {
       '- Summarize unbilled/unpaid: billing_summary',
       '- Mark sessions: mark_invoiced, mark_paid',
       '- Adjust times safely: session_adjust (supports dry_run + confirm_phrase)',
+      '- Local/UTC behavior: when you provide local times, Work-Timer converts them to UTC for storage and then presents queried times back in local time',
     ].join('\n');
   }
 
@@ -125,6 +127,7 @@ function getWorkTimerHelp(topic: (typeof HELP_TOPICS)[number]): string {
     '- Core timers: start, pause, resume, stop, status',
     '- Projects: create/update/list/rename/delete/merge',
     '- Billing + sessions: query, summary, invoicing/payment, session_adjust',
+    '- Time model: capture and display in local time, normalize to UTC for storage, convert back to local time for query results',
     '- Exports: csv, xlsx, accounting presets',
     '- Safety: destructive actions support dry_run and require confirm_phrase',
     '- For deeper guidance, call work_timer_help with topic: timers, projects, billing, exports, setup, safety, examples',
