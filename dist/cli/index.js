@@ -29,7 +29,7 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.29';
+const CLI_VERSION = '1.3.30';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -548,6 +548,121 @@ program
     rl.close();
 });
 // --- MCP client installation ---
+const ANSI = {
+    reset: '\x1b[0m',
+    bold: '\x1b[1m',
+    dim: '\x1b[2m',
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    cyan: '\x1b[36m',
+};
+function supportsColor() {
+    return Boolean(process.stdout.isTTY && process.env.NO_COLOR !== '1' && process.env.NO_COLOR !== 'true');
+}
+function colorize(text, colorCode) {
+    if (!colorCode || !supportsColor()) {
+        return text;
+    }
+    return `${colorCode}${text}${ANSI.reset}`;
+}
+function stripAnsi(text) {
+    return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+function wrapText(text, width) {
+    const rawLines = text.split(/\r?\n/);
+    const wrapped = [];
+    for (const rawLine of rawLines) {
+        const line = rawLine.trimEnd();
+        if (line.length <= width) {
+            wrapped.push(line);
+            continue;
+        }
+        const leading = (line.match(/^\s*/) ?? [''])[0];
+        const content = line.trimStart();
+        const contentWidth = Math.max(10, width - leading.length);
+        const words = content.split(/\s+/);
+        let current = '';
+        for (const word of words) {
+            if (!current) {
+                current = word;
+                continue;
+            }
+            if (`${current} ${word}`.length <= contentWidth) {
+                current = `${current} ${word}`;
+            }
+            else {
+                wrapped.push(`${leading}${current}`);
+                current = word;
+            }
+        }
+        if (current) {
+            wrapped.push(`${leading}${current}`);
+        }
+    }
+    return wrapped.length > 0 ? wrapped : [''];
+}
+function padRight(text, width) {
+    const visible = stripAnsi(text).length;
+    if (visible >= width) {
+        return text;
+    }
+    return `${text}${' '.repeat(width - visible)}`;
+}
+function printPanel(title, bodyLines, tone = ANSI.cyan) {
+    const maxWidth = Math.max(76, Math.min(process.stdout.columns ?? 100, 120));
+    const innerWidth = maxWidth - 4;
+    const topBorder = colorize(`+${'-'.repeat(maxWidth - 2)}+`, tone);
+    console.log(topBorder);
+    console.log(colorize(`| ${padRight(colorize(title, ANSI.bold), innerWidth)} |`, tone));
+    console.log(colorize(`+${'-'.repeat(maxWidth - 2)}+`, tone));
+    for (const line of bodyLines) {
+        const wrapped = wrapText(line, innerWidth);
+        for (const chunk of wrapped) {
+            console.log(`| ${padRight(chunk, innerWidth)} |`);
+        }
+    }
+    console.log(topBorder);
+}
+function statusTag(status) {
+    switch (status) {
+        case 'updated':
+        case 'created':
+            return colorize('[UPDATED]', ANSI.green);
+        case 'unchanged':
+            return colorize('[UNCHANGED]', ANSI.blue);
+        case 'skipped-missing':
+        case 'skipped-manual':
+            return colorize('[SKIPPED]', ANSI.yellow);
+        case 'error':
+            return colorize('[ERROR]', ANSI.red);
+        default:
+            return colorize('[INFO]', ANSI.cyan);
+    }
+}
+function printSeparator(label) {
+    const width = Math.max(76, Math.min(process.stdout.columns ?? 100, 120));
+    if (!label) {
+        console.log(colorize('-'.repeat(width), ANSI.dim));
+        return;
+    }
+    const prefix = ` ${label} `;
+    const rest = Math.max(0, width - prefix.length);
+    console.log(colorize(`${prefix}${'-'.repeat(rest)}`, ANSI.dim));
+}
+function formatManualSteps(steps) {
+    const lines = [];
+    lines.push(colorize('Manual follow-up:', ANSI.bold));
+    for (let i = 0; i < steps.length; i += 1) {
+        const stepLines = steps[i].split(/\r?\n/);
+        lines.push(`  ${i + 1}. ${stepLines[0]}`);
+        for (const extra of stepLines.slice(1)) {
+            lines.push(`     ${extra}`);
+        }
+    }
+    return lines;
+}
 const mcpCmd = program.command('mcp').description('Manage MCP client registrations');
 mcpCmd
     .command('list')
@@ -686,9 +801,11 @@ mcpCmd
             console.log('No matching MCP clients selected.');
             return;
         }
-        console.log('Starting MCP client installation...');
-        console.log(`Found ${targets.length} target(s) to process.`);
-        console.log(`Using MCP server path: ${serverPath}`);
+        printPanel('WORK-TIMER MCP INSTALLER', [
+            `Mode: ${opts.dryRun ? 'Dry run (no files written)' : 'Apply changes'}`,
+            `Targets detected: ${targets.length}`,
+            `MCP server path: ${serverPath}`,
+        ]);
         const results = targets.map((target) => {
             if (target.kind === 'json') {
                 return applyJsonMcpInstall({
@@ -711,40 +828,48 @@ mcpCmd
                 message: target.notes,
             };
         });
+        printSeparator('Results');
         for (const result of results) {
-            console.log(`- ${result.target.id}: ${result.status}`);
-            console.log(`  ${result.message}`);
+            const body = [];
+            body.push(`Client: ${result.target.label} (${result.target.id})`);
+            body.push(`Outcome: ${result.message}`);
             if (result.backupPath) {
-                console.log(`  backup: ${result.backupPath}`);
+                body.push(`Backup: ${result.backupPath}`);
             }
             if (result.status === 'error' || result.status === 'skipped-missing') {
-                const manualSteps = getManualInstallInstructions(result.target, serverPath);
-                console.log('  manual follow-up:');
-                for (const step of manualSteps) {
-                    console.log(`    - ${step}`);
-                }
+                body.push('');
+                body.push(...formatManualSteps(getManualInstallInstructions(result.target, serverPath)));
             }
+            const tone = result.status === 'error'
+                ? ANSI.red
+                : result.status === 'updated' || result.status === 'created'
+                    ? ANSI.green
+                    : result.status === 'unchanged'
+                        ? ANSI.blue
+                        : ANSI.yellow;
+            printPanel(`${statusTag(result.status)} ${result.target.id}`, body, tone);
         }
         const updatedCount = results.filter((result) => result.status === 'updated' || result.status === 'created').length;
         const unchangedCount = results.filter((result) => result.status === 'unchanged').length;
         const skippedCount = results.filter((result) => result.status === 'skipped-missing' || result.status === 'skipped-manual').length;
         const errorCount = results.filter((result) => result.status === 'error').length;
-        console.log('');
-        console.log('MCP installation summary:');
-        console.log(`- updated/created: ${updatedCount}`);
-        console.log(`- unchanged: ${unchangedCount}`);
-        console.log(`- skipped: ${skippedCount}`);
-        console.log(`- errors: ${errorCount}`);
+        printSeparator('Summary');
+        printPanel('MCP INSTALLATION SUMMARY', [
+            `Updated or created: ${updatedCount}`,
+            `Unchanged: ${unchangedCount}`,
+            `Skipped: ${skippedCount}`,
+            `Errors: ${errorCount}`,
+        ], errorCount > 0 ? ANSI.red : ANSI.green);
         if (skippedCount > 0 && !opts.createMissing) {
-            console.log('- tip: some clients were skipped because config files were missing.');
-            console.log('  rerun with --create-missing to create missing JSON configs automatically.');
+            printPanel('TIP', [
+                'Some clients were skipped because config files were missing.',
+                'Re-run with --create-missing to create missing JSON configs automatically.',
+            ], ANSI.yellow);
         }
         if (errorCount === 0) {
-            console.log('Done. If a client was updated, restart that client to load new MCP settings.');
+            console.log(colorize('Done. If a client was updated, restart that client to load new MCP settings.', ANSI.green));
         }
-        console.log('');
-        console.log('Recommended client system prompt (if your LLM app supports one):');
-        console.log(getRecommendedLlmSystemPrompt());
+        printPanel('RECOMMENDED CLIENT SYSTEM PROMPT', [getRecommendedLlmSystemPrompt()], ANSI.cyan);
         const errors = results.filter((result) => result.status === 'error');
         if (errors.length > 0) {
             process.exit(1);

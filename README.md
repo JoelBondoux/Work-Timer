@@ -1,6 +1,6 @@
 # Work-Timer
 
-Current version: 1.3.27
+Current version: 1.3.30
 
 A zero-cost, open-source work timer and billing tool built for solo contractors and freelancers. Control it with natural language through any MCP-compatible AI assistant (Claude, Cursor, etc.) or via the command line.
 
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These scripts auto-detect whether your local `Work-Timer` folder already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production pinning, replace `master` in the URL with a release tag such as `v1.3.27`.
+For production pinning, replace `master` in the URL with a release tag such as `v1.3.30`.
 
 Faster branch-testing options:
 - Skip build: set `WORK_TIMER_SKIP_BUILD=1`

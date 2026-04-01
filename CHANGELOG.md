@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.30] - 2026-04-01
+
+### Changed
+
+- Improved `work-timer mcp install` terminal UX with structured, bordered output panels and clearer section separators.
+- Added colorized status tags and cleaner per-client result blocks to make update outcomes easier to scan.
+- Improved readability of manual follow-up instructions, including multi-line JSON snippets and step-by-step formatting.
+
 ## [1.3.29] - 2026-04-01
 
 ### Fixed
