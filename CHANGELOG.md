@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.26] - 2026-04-01
+
+### Changed
+
+- Installer now updates existing valid Work-Timer installations in place instead of automatically switching to a sibling install folder.
+- If the target folder exists but is not a valid Work-Timer installation, installer now moves it to a timestamped backup and installs into the requested target path.
+- If an existing Work-Timer installation has uncommitted changes, installer now stops by default with guidance to clean/stash or opt in via `WORK_TIMER_ALLOW_DIRTY=1`.
+
 ## [1.3.25] - 2026-04-01
 
 ### Fixed
