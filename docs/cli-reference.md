@@ -27,6 +27,20 @@ Update notifications:
 - If you skip that prompt, the same version is not announced again; you are prompted only when a newer version appears
 - Set `WORK_TIMER_DISABLE_UPDATE_CHECK=1` to disable this behavior
 
+### `work-timer doctor install-path`
+
+Inspect local installation path state and preview what installer behavior will be applied.
+
+```bash
+work-timer doctor install-path
+work-timer doctor install-path --path C:\\Users\\yourname\\Work-Timer
+```
+
+Behavior:
+- Shows whether the path exists, is a git repo, looks like a Work-Timer install, and has uncommitted changes.
+- Prints the detected origin URL when available.
+- Explains whether installer will update in place, stop for dirty changes, or back up a non-install folder before installing.
+
 ### `work-timer uninstall`
 
 Uninstall Work-Timer from the global npm location.

@@ -40,6 +40,45 @@ backup_existing_dir() {
   echo "Moved existing folder to backup: $backup"
 }
 
+read_package_version_from_file() {
+  local file="$1"
+  [ -f "$file" ] || return 1
+  node -e "const fs=require('fs'); const p=process.argv[1]; try { const j=JSON.parse(fs.readFileSync(p,'utf8')); if (j && typeof j.version === 'string') process.stdout.write(j.version); } catch {}" "$file"
+}
+
+read_package_version_from_git_ref() {
+  local ref="$1"
+  git show "$ref:package.json" 2>/dev/null | node -e "let s=''; process.stdin.on('data',d=>s+=d); process.stdin.on('end',()=>{ try { const j=JSON.parse(s); if (j && typeof j.version === 'string') process.stdout.write(j.version); } catch {} });"
+}
+
+confirm_repair_or_cancel() {
+  local version="$1"
+  local mode="${WORK_TIMER_REPAIR_MODE:-}"
+  case "${mode,,}" in
+    repair)
+      echo "Same version detected. Proceeding with repair mode (WORK_TIMER_REPAIR_MODE=repair)."
+      return 0
+      ;;
+    cancel)
+      echo "Same version detected. Cancelling (WORK_TIMER_REPAIR_MODE=cancel)."
+      return 1
+      ;;
+  esac
+
+  if [ ! -t 0 ] || [ ! -t 1 ]; then
+    echo "Same version ($version) is already installed."
+    echo "Set WORK_TIMER_REPAIR_MODE=repair to continue with repair, or WORK_TIMER_REPAIR_MODE=cancel to skip."
+    return 1
+  fi
+
+  local answer
+  read -r -p "Same version ($version) is already installed. Repair this installation or cancel? [r/C] " answer
+  case "${answer,,}" in
+    r|repair) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 install_dependencies() {
   if [ -f "package-lock.json" ]; then
     echo "Installing dependencies with npm ci..."
@@ -97,6 +136,17 @@ if [ "$EXISTING_INSTALL" = "1" ]; then
   echo "Existing install repository detected. Updating..."
   git fetch origin "$REPO_REF" --tags
   git checkout "$REPO_REF"
+
+  current_version="$(read_package_version_from_file "$REPO_DIR/package.json" || true)"
+  target_version="$(read_package_version_from_git_ref "origin/$REPO_REF" || true)"
+  if [ -n "$current_version" ] && [ -n "$target_version" ] && [ "$current_version" = "$target_version" ]; then
+    if ! confirm_repair_or_cancel "$current_version"; then
+      echo "Installation cancelled."
+      exit 0
+    fi
+    echo "Proceeding with repair for version $current_version..."
+  fi
+
   git pull --ff-only origin "$REPO_REF"
 else
   echo "No existing Work-Timer install detected. Cloning into target directory..."

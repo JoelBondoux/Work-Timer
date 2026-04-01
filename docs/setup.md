@@ -32,6 +32,8 @@ Installer behavior notes:
 - Existing valid Work-Timer installs are updated in place.
 - If the target folder exists but is not a Work-Timer install, it is moved to a timestamped backup and installation continues in the requested folder.
 - If an existing Work-Timer install has uncommitted changes, installer stops by default; set `WORK_TIMER_ALLOW_DIRTY=1` only when you intentionally want to proceed.
+- If the installed version already matches the requested version, installer asks whether to `repair` or `cancel`.
+- In non-interactive environments, set `WORK_TIMER_REPAIR_MODE=repair` to force repair, or `WORK_TIMER_REPAIR_MODE=cancel` to skip.
 - Speed up branch-switch testing by skipping build and relink:
   - `WORK_TIMER_SKIP_BUILD=1`
   - `WORK_TIMER_SKIP_LINK=1`

@@ -90,6 +90,56 @@ function Move-ToBackup([string]$Path) {
   Write-Host "Moved existing folder to backup: $backupPath"
 }
 
+function Get-PackageVersionFromFile([string]$Path) {
+  if (-not (Test-Path $Path)) {
+    return $null
+  }
+
+  try {
+    $raw = Get-Content -Path $Path -Raw -Encoding UTF8
+    $obj = $raw | ConvertFrom-Json
+    return [string]$obj.version
+  } catch {
+    return $null
+  }
+}
+
+function Get-PackageVersionFromGitRef([string]$GitRef) {
+  try {
+    $raw = git show "$GitRef`:package.json" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $raw) {
+      return $null
+    }
+    $obj = ($raw | Out-String) | ConvertFrom-Json
+    return [string]$obj.version
+  } catch {
+    return $null
+  }
+}
+
+function Confirm-RepairOrCancel([string]$Version) {
+  $mode = ($env:WORK_TIMER_REPAIR_MODE ?? '').Trim().ToLowerInvariant()
+  if ($mode -eq 'repair') {
+    Write-Host "Same version detected. Proceeding with repair mode (WORK_TIMER_REPAIR_MODE=repair)."
+    return $true
+  }
+  if ($mode -eq 'cancel') {
+    Write-Host "Same version detected. Cancelling (WORK_TIMER_REPAIR_MODE=cancel)."
+    return $false
+  }
+
+  $interactive = $true
+  try { $null = $Host.UI.RawUI } catch { $interactive = $false }
+  if (-not $interactive -or [Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+    Write-Host "Same version ($Version) is already installed."
+    Write-Host "Set WORK_TIMER_REPAIR_MODE=repair to continue with repair, or WORK_TIMER_REPAIR_MODE=cancel to skip."
+    return $false
+  }
+
+  $answer = (Read-Host "Same version ($Version) is already installed. Repair this installation or cancel? [r/C]").Trim().ToLowerInvariant()
+  return ($answer -eq 'r' -or $answer -eq 'repair')
+}
+
 Assert-Command git
 Assert-Command node
 Assert-Command npm
@@ -127,6 +177,17 @@ if ($existingInstall) {
   Write-Host "Existing install repository detected. Updating..."
   Invoke-External -Command "git" -CommandArgs @("fetch", "origin", $RepoRef, "--tags") -FailureMessage "git fetch failed"
   Invoke-External -Command "git" -CommandArgs @("checkout", $RepoRef) -FailureMessage "git checkout failed"
+
+  $currentVersion = Get-PackageVersionFromFile (Join-Path $installDir "package.json")
+  $targetVersion = Get-PackageVersionFromGitRef "origin/$RepoRef"
+  if ($currentVersion -and $targetVersion -and $currentVersion -eq $targetVersion) {
+    if (-not (Confirm-RepairOrCancel -Version $currentVersion)) {
+      Write-Host "Installation cancelled."
+      exit 0
+    }
+    Write-Host "Proceeding with repair for version $currentVersion..."
+  }
+
   Invoke-External -Command "git" -CommandArgs @("pull", "--ff-only", "origin", $RepoRef) -FailureMessage "git pull failed"
 } else {
   Write-Host "No existing Work-Timer install detected. Cloning into target directory..."
