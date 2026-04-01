@@ -140,6 +140,19 @@ function Confirm-RepairOrCancel([string]$Version) {
   return ($answer -eq 'r' -or $answer -eq 'repair')
 }
 
+function Get-MeaningfulDirtyStatus() {
+  # Ignore generated dist artifacts; block only meaningful tracked changes.
+  try {
+    $dirty = git status --porcelain --untracked-files=no -- . ":(exclude)dist" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      return $null
+    }
+    return $dirty
+  } catch {
+    return $null
+  }
+}
+
 Assert-Command git
 Assert-Command node
 Assert-Command npm
@@ -158,7 +171,7 @@ if (Test-Path $RepoDir) {
     if ($origin -and $origin -match "JoelBondoux/Work-Timer") {
       $existingInstall = $true
       if (-not $AllowDirty) {
-        $dirty = (git status --porcelain 2>$null)
+        $dirty = Get-MeaningfulDirtyStatus
         if ($dirty) {
           throw "Existing Work-Timer installation has uncommitted changes: $RepoDir. Clean/stash changes first, or rerun with WORK_TIMER_ALLOW_DIRTY=1 to proceed."
         }
