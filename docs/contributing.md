@@ -170,6 +170,7 @@ Configure these GitHub branch protection settings for `master`:
 - External LLM client tooling is tracked separately in `/.github/llm-client-watchlist/package.json`
 - Keep the watchlist focused on integrations that can affect MCP installer compatibility to avoid noisy update PRs
 - When adding or removing supported client integrations, update both the MCP installer logic and the watchlist manifest
+- Semver-major updates for `typescript`, `@types/node`, and `vitest` are intentionally ignored by Dependabot to reduce breakage risk; review these major upgrades manually at least once per quarter in a dedicated compatibility branch
 
 ### Before Submitting
 
