@@ -109,6 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Installer scripts now block updates on dirty repositories by default and support `WORK_TIMER_SKIP_BUILD` / `WORK_TIMER_SKIP_LINK` for faster non-destructive branch testing
+- Dependabot now ignores semver-major bumps for `typescript`, `@types/node`, and `vitest` to reduce breaking grouped dev-dependency PRs
 - Refactored updater flow into shared logic so both `work-timer update` and the update prompt use the same install path and messaging
 
 ## [1.3.5] - 2026-03-31
