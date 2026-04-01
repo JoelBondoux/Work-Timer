@@ -1,6 +1,6 @@
 {
   "name": "work-timer",
-  "version": "1.3.15",
+  "version": "1.3.16",
   "description": "A zero-cost, local-first work timer and billing tool for solo contractors. Control via natural language through any MCP-compatible LLM client or CLI.",
   "type": "module",
   "main": "./dist/mcp/server.js",
@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "check:production": "node ./check-production-readiness.mjs",
     "start:mcp": "node dist/mcp/server.js",
     "start:cli": "node dist/cli/index.js",
     "dev": "tsc --watch",

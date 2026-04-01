@@ -25,25 +25,26 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 
 ### 1. Install
 
-```bash
-git clone https://github.com/JoelBondoux/Work-Timer.git
-cd Work-Timer
-npm install
-npm run build
-npm link  # Makes 'work-timer' available globally
-```
-
-If the `Work-Timer` folder already exists, update it instead of cloning again:
+Windows PowerShell (one line):
 
 ```powershell
-cd "$HOME/Work-Timer"
-git fetch origin
-git checkout master
-git pull --ff-only
-npm install
-npm run build
-npm link
+irm https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/install.ps1 | iex
 ```
+
+macOS / Linux (one line):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/install.sh | bash
+```
+
+These scripts auto-detect whether your local `Work-Timer` folder already exists and then clone or update, install dependencies, build, and run `npm link`.
+
+For production pinning, replace `master` in the URL with a release tag such as `v1.3.16`.
+
+Faster branch-testing options:
+- Skip build: set `WORK_TIMER_SKIP_BUILD=1`
+- Skip global relink: set `WORK_TIMER_SKIP_LINK=1`
+- Prevent updates on dirty repos by default; override with `WORK_TIMER_ALLOW_DIRTY=1`
 
 > **Windows users:** `npm link` may require adding npm's global bin to your PATH and setting PowerShell's execution policy. See the [Setup Guide](docs/setup.md#npm-link-not-working-on-windows) for details.
 

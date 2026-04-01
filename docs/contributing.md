@@ -18,6 +18,20 @@ npm install
 npm run build
 ```
 
+### Branching Model (Production-Safe)
+
+- `master` is production-ready only.
+- Do not commit directly to `master` for feature work.
+- Create short-lived branches from `master` for every change.
+- Open a pull request back into `master`.
+- Merge only after required checks pass (`npm test`, `npm run build`).
+
+Suggested branch names:
+
+- `feature/<short-description>`
+- `fix/<short-description>`
+- `chore/<short-description>`
+
 ### Development Workflow
 
 ```bash
@@ -140,6 +154,15 @@ describe('myFeature', () => {
 
 ## Pull Request Guidelines
 
+### Protected Branch Rules (Recommended)
+
+Configure these GitHub branch protection settings for `master`:
+
+1. Require a pull request before merging
+2. Require status checks to pass before merging
+3. Block force pushes
+4. Optionally require at least one approval
+
 ## Dependency Update Automation
 
 - Dependabot is configured in `/.github/dependabot.yml`
@@ -152,8 +175,10 @@ describe('myFeature', () => {
 
 1. Run `npm test` — all tests must pass
 2. Run `npm run build` — no TypeScript errors
-3. Add tests for new features or bug fixes
-4. Update documentation if the change affects user-facing behavior
+3. Run `npm run check:production` — ensures no debug/dev-only artifacts are shipped
+4. Add tests for new features or bug fixes
+5. Update documentation if the change affects user-facing behavior
+6. Confirm your branch is not `master`
 
 ### PR Format
 
@@ -167,6 +192,17 @@ Brief description of what changed and why.
 ## Test Plan
 - How to verify the change works
 ```
+
+### Production Cleanup PR Checklist
+
+Use this checklist when a PR's goal is to remove debug/dev-only artifacts before release:
+
+1. Branch from `master` using a `fix/` branch name (for example: `fix/production-cleanup`).
+2. Remove only production-risk artifacts (debug code, temporary release tags, conflict markers, accidental dev-only content).
+3. Keep useful development context in the PR description, issue discussion, or a follow-up branch instead of shipping it to `master`.
+4. Run `npm run check:production`, `npm test`, and `npm run build`.
+5. Include a short "before vs after" summary in the PR body.
+6. Merge only through PR after required checks pass.
 
 ### Code Style
 

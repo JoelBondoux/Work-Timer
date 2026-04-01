@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.16] - 2026-04-01
+
+### Changed
+
+- Installation docs now use one-line root installer URLs (`install.ps1` and `install.sh`) so setup no longer depends on a `scripts/` path
+- Contributing guidance now documents a production-safe trunk-based workflow: short-lived feature branches, PR-only merges, and protected `master` recommendations
+
+### Added
+
+- Added production-ready root installers (`install.ps1`, `install.sh`) with prerequisite checks, safe existing-repo validation, deterministic dependency install (`npm ci` when lockfile exists), and optional ref pinning via `WORK_TIMER_REPO_REF`
+- Added repository instruction files for coding assistants: `.github/copilot-instructions.md` and `CLAUDE.md`, aligned to production-only `master` workflow
+- Added GitHub Actions CI workflow at `.github/workflows/ci.yml` with explicit `Test` and `Build` checks for PR enforcement
+- Added production readiness gate (`npm run check:production`) and CI job (`ProductionReadiness`) to fail PRs that contain common debug/dev-only artifacts
+- Added a dedicated Production Cleanup PR checklist to `docs/contributing.md` to standardize branch/PR workflow for release hardening changes
+
 ## [1.3.15] - 2026-04-01
 
 ### Added
@@ -93,11 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `work-timer uninstall` CLI command with confirmation prompt (`--yes` to skip)
-- Automatic update announcements in CLI usage: checks GitHub daily and, when newer builds exist, offers an interactive `Update now?` prompt
-
-### Changed
-
+- Installer scripts now block updates on dirty repositories by default and support `WORK_TIMER_SKIP_BUILD` / `WORK_TIMER_SKIP_LINK` for faster non-destructive branch testing
 - Refactored updater flow into shared logic so both `work-timer update` and the update prompt use the same install path and messaging
 
 ## [1.3.5] - 2026-03-31
