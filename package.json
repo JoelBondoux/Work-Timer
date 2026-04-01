@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "check:production": "node ./check-production-readiness.mjs",
     "start:mcp": "node dist/mcp/server.js",
     "start:cli": "node dist/cli/index.js",
     "dev": "tsc --watch",

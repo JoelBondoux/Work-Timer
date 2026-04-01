@@ -24,6 +24,7 @@
 ## Required Validation Before PR
 
 - Run `npm test` and `npm run build`.
+- Run `npm run check:production` to catch debug/dev-only artifacts before merge.
 - If source files change under `src/`, ensure generated outputs under `dist/` are regenerated and committed when applicable.
 - If CLI command behavior changes, update docs in `docs/cli-reference.md` and relevant setup/readme pages.
 - If MCP tools change, update `docs/mcp-tools.md` to keep tool docs and counts accurate.

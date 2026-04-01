@@ -175,9 +175,10 @@ Configure these GitHub branch protection settings for `master`:
 
 1. Run `npm test` — all tests must pass
 2. Run `npm run build` — no TypeScript errors
-3. Add tests for new features or bug fixes
-4. Update documentation if the change affects user-facing behavior
-5. Confirm your branch is not `master`
+3. Run `npm run check:production` — ensures no debug/dev-only artifacts are shipped
+4. Add tests for new features or bug fixes
+5. Update documentation if the change affects user-facing behavior
+6. Confirm your branch is not `master`
 
 ### PR Format
 

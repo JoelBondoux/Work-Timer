@@ -24,6 +24,7 @@
 ## Required Validation
 
 - Run `npm test` and `npm run build` before opening or updating a PR.
+- Run `npm run check:production` to block debug/dev-only artifacts from release branches.
 - If files in `src/` are changed, regenerate and commit matching `dist/` outputs when applicable.
 - If CLI behavior changes, update `docs/cli-reference.md` and related setup/readme docs.
 - If MCP tools are added or changed, update `docs/mcp-tools.md` to keep tool docs and counts accurate.
