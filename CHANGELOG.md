@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.32] - 2026-04-01
+
+### Changed
+
+- Installer dirty-state failures now include the current git branch and a preview of blocking files (first 5) to make remediation faster.
+- Applied this diagnostic improvement consistently across both `install.ps1` and `install.sh`.
+
 ## [1.3.31] - 2026-04-01
 
 ### Added

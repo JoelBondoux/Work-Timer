@@ -1,6 +1,6 @@
 # Work-Timer
 
-Current version: 1.3.31
+Current version: 1.3.32
 
 A zero-cost, open-source work timer and billing tool built for solo contractors and freelancers. Control it with natural language through any MCP-compatible AI assistant (Claude, Cursor, etc.) or via the command line.
 
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These scripts auto-detect whether your local `Work-Timer` folder already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production pinning, replace `master` in the URL with a release tag such as `v1.3.31`.
+For production pinning, replace `master` in the URL with a release tag such as `v1.3.32`.
 
 Faster branch-testing options:
 - Skip build: set `WORK_TIMER_SKIP_BUILD=1`
@@ -50,6 +50,7 @@ Faster branch-testing options:
 - Existing valid `~/Work-Timer` installs are updated in place
 - If the target folder exists but is not a Work-Timer install, it is moved to a timestamped backup and installation continues in the requested folder
 - If an existing Work-Timer install has uncommitted changes, installer stops by default; generated `dist/`-only changes are ignored, and you can still set `WORK_TIMER_ALLOW_DIRTY=1` when you intentionally want to proceed
+- Dirty-state errors include the active branch and a preview of blocking files to speed up cleanup
 - When only generated tracked files in `dist/` are changed, installer now resets `dist/` before pull to avoid fast-forward conflicts during update
 - If the installed version already matches the requested version, installer asks whether to `repair` (reinstall deps/rebuild/relink) or `cancel`
 - In non-interactive environments, set `WORK_TIMER_REPAIR_MODE=repair` to force repair, or `WORK_TIMER_REPAIR_MODE=cancel` to skip
