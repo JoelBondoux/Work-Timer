@@ -29,10 +29,10 @@
   "license": "MIT",
   "dependencies": {
     "@libsql/client": "^0.17.2",
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^14.0.0",
     "write-excel-file": "^3.0.8",
-    "zod": "^3.25.0"
+    "zod": "^4.3.6"
   },
   "overrides": {
     "path-to-regexp": "8.4.0",
