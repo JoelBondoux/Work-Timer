@@ -51,3 +51,9 @@
 ## Safety Rule
 
 If a change is not production-ready, keep it on a branch and do not merge to `master`.
+
+## PR Review Automation
+
+- When a PR is in a `REVIEW_REQUIRED` state, the active coding agent must run a review automatically.
+- The review should prioritize regressions and risk (correctness, safety, behavior changes, and missing tests).
+- Provide a merge recommendation (`approve` or `changes requested`) with concrete next steps.

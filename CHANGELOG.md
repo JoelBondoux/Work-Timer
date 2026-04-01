@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Added a dedicated Production Cleanup PR checklist to `docs/contributing.md` to standardize branch/PR workflow for release hardening changes
 - Dependabot now ignores semver-major bumps for `typescript`, `@types/node`, and `vitest` to reduce breaking grouped dev-dependency PRs
 - Added contributing guidance to review ignored major dev-tool upgrades (`typescript`, `@types/node`, `vitest`) manually at least once per quarter
+- Added coding-agent instruction that when PR state is `REVIEW_REQUIRED`, the active agent should auto-run a risk-focused review and provide merge recommendations
 
 ## [1.3.15] - 2026-04-01
 
