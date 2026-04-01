@@ -9,6 +9,8 @@ export type McpClientId =
   | 'vscode'
   | 'vscode-insiders'
   | 'claude-code'
+  | 'codex-cli'
+  | 'gemini-cli'
   | 'chatgpt-desktop';
 
 type JsonSchema = 'claude' | 'copilot';
@@ -236,6 +238,20 @@ export function discoverMcpTargets(params?: {
       args: ['mcp', 'add', 'work-timer', '--', 'node'],
     },
     {
+      id: 'codex-cli',
+      label: 'OpenAI Codex CLI',
+      kind: 'command',
+      command: 'codex',
+      args: ['mcp', 'add', 'work-timer', '--', 'node'],
+    },
+    {
+      id: 'gemini-cli',
+      label: 'Google Gemini CLI',
+      kind: 'command',
+      command: 'gemini',
+      args: ['mcp', 'add', '--scope', 'user', 'work-timer', 'node'],
+    },
+    {
       id: 'chatgpt-desktop',
       label: 'ChatGPT Desktop',
       kind: 'manual',
@@ -262,7 +278,7 @@ export function applyJsonMcpInstall(input: {
     return {
       target,
       status: 'skipped-missing',
-      message: `Config file not found: ${target.configPath}`,
+      message: `Config file not found: ${target.configPath}. Re-run with --create-missing to create it automatically.`,
     };
   }
 
@@ -424,6 +440,8 @@ export function parseClientIds(input: string): McpClientId[] {
     'vscode',
     'vscode-insiders',
     'claude-code',
+    'codex-cli',
+    'gemini-cli',
     'chatgpt-desktop',
   ]);
 

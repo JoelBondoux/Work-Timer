@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.18] - 2026-04-01
+
+### Added
+
+- Added command-based MCP auto-install support for `codex-cli` (OpenAI Codex CLI) and `gemini-cli` (Google Gemini CLI)
+- Added `work-timer mcp doctor` diagnostics coverage for the new command-based clients
+
+### Changed
+
+- Updated MCP install/list docs and setup guide to include OpenAI Codex CLI and Google Gemini CLI workflows
+
+## [1.3.17] - 2026-04-01
+
+### Changed
+
+- Improved `work-timer mcp install` fresh-install UX by adding explicit `--create-missing` guidance when client config files are absent
+- Quick-start and installer completion hints now recommend `work-timer mcp install --create-missing` for first-time MCP setup
+- Updated setup and CLI docs to clarify why missing client config files are skipped without `--create-missing`
+
 ## [1.3.16] - 2026-04-01
 
 ### Changed

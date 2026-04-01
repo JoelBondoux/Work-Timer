@@ -6,6 +6,7 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
 - **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
+- **Expanded CLI integrations** — Auto-installer supports Claude Code, OpenAI Codex CLI, and Google Gemini CLI command-based MCP registration
 - **Built-in MCP help** — `work_timer_help` explains capabilities, workflows, and example usage for LLMs/users
 - **MCP auto-installer** — Programmatically detects and patches supported local MCP client configs with backup + dry-run support
 - **CLI** — Full command-line interface for quick manual use
@@ -87,7 +88,7 @@ Optional: auto-register Work-Timer in detected local MCP clients:
 
 ```bash
 work-timer mcp install --dry-run
-work-timer mcp install
+work-timer mcp install --create-missing
 ```
 
 Or set environment variables:

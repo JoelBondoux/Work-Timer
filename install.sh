@@ -91,3 +91,4 @@ echo
 echo "Installation complete."
 echo "Run: work-timer setup"
 echo "Optional MCP setup: work-timer mcp install --dry-run"
+echo "Then run: work-timer mcp install --create-missing"
