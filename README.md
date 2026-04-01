@@ -33,6 +33,18 @@ npm run build
 npm link  # Makes 'work-timer' available globally
 ```
 
+If the `Work-Timer` folder already exists, update it instead of cloning again:
+
+```powershell
+cd "$HOME/Work-Timer"
+git fetch origin
+git checkout master
+git pull --ff-only
+npm install
+npm run build
+npm link
+```
+
 > **Windows users:** `npm link` may require adding npm's global bin to your PATH and setting PowerShell's execution policy. See the [Setup Guide](docs/setup.md#npm-link-not-working-on-windows) for details.
 
 ### 2. Set Up Database

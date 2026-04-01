@@ -34,12 +34,15 @@ Uninstall Work-Timer from the global npm location.
 ```bash
 work-timer uninstall
 work-timer uninstall --yes
+work-timer uninstall --purge-local C:\\Users\\yourname\\Work-Timer
 ```
 
 Behavior:
 - Runs `npm uninstall -g work-timer`
 - Prompts for confirmation unless `--yes` is passed
 - If your current terminal still resolves `work-timer` after uninstall, open a new terminal session
+- Optional `--purge-local <path>` safely removes a local Work-Timer source folder after uninstall
+- Local purge requires explicit confirmation (or `--yes`) and refuses to delete non-Work-Timer folders
 
 ### `work-timer mcp list`
 

@@ -19,6 +19,25 @@ npm install
 npm run build
 ```
 
+If `Work-Timer` already exists locally, use this idempotent PowerShell flow instead:
+
+```powershell
+$repoDir = Join-Path $HOME "Work-Timer"
+if (Test-Path $repoDir) {
+  Set-Location $repoDir
+  git fetch origin
+  git checkout master
+  git pull --ff-only
+} else {
+  git clone https://github.com/JoelBondoux/Work-Timer.git $repoDir
+  Set-Location $repoDir
+}
+
+npm install
+npm run build
+npm link
+```
+
 To make the `work-timer` command available globally:
 
 ```bash

@@ -10,8 +10,8 @@ import { exportCsv, exportXlsx, exportPresetCsv } from '../core/export.js';
 import { listPresetIds } from '../core/presets.js';
 import { formatRunningTimers, formatBillingRecords, formatProjectTotals, formatProject, formatProjectList, formatDuration, } from '../core/format.js';
 import { utcDbToLocal } from '../core/time.js';
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
@@ -29,7 +29,7 @@ function prompt(question) {
     });
 }
 const program = new Command();
-const CLI_VERSION = '1.3.14';
+const CLI_VERSION = '1.3.15';
 const GITHUB_TARBALL_URL = 'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL = 'https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/package.json';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -71,6 +71,19 @@ function parsePositiveSessionIds(sessionIds) {
         }
         return parsed;
     });
+}
+function looksLikeWorkTimerRepo(repoPath) {
+    const packageJsonPath = join(repoPath, 'package.json');
+    if (!existsSync(packageJsonPath)) {
+        return false;
+    }
+    try {
+        const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        return pkg.name === 'work-timer';
+    }
+    catch {
+        return false;
+    }
 }
 function runNpm(args) {
     const spawnOptions = {
@@ -340,6 +353,7 @@ program
     .command('uninstall')
     .description('Uninstall Work-Timer from the global npm location')
     .option('--yes', 'Skip confirmation prompt')
+    .option('--purge-local <path>', 'Also delete a local Work-Timer source folder after uninstall')
     .action(async (opts) => {
     try {
         if (!opts.yes && process.stdin.isTTY && process.stdout.isTTY) {
@@ -356,6 +370,36 @@ program
         }
         console.log('Work-Timer has been uninstalled from global npm packages.');
         console.log('If this terminal still resolves `work-timer`, open a new terminal session.');
+        if (opts.purgeLocal) {
+            const localPath = resolve(opts.purgeLocal);
+            if (!existsSync(localPath)) {
+                throw new Error(`Local path not found: ${localPath}`);
+            }
+            if (!statSync(localPath).isDirectory()) {
+                throw new Error(`Local path is not a directory: ${localPath}`);
+            }
+            if (!looksLikeWorkTimerRepo(localPath)) {
+                throw new Error(`Refusing to delete "${localPath}" because it does not look like a Work-Timer repository (missing package.json name=work-timer).`);
+            }
+            const cwd = resolve(process.cwd()).toLowerCase();
+            const localLower = localPath.toLowerCase();
+            if (cwd === localLower || cwd.startsWith(localLower + '\\')) {
+                throw new Error(`Cannot purge the current working directory (${localPath}). Change directories and run uninstall again.`);
+            }
+            if (!opts.yes && process.stdin.isTTY && process.stdout.isTTY) {
+                const confirm = await prompt(`Delete local source folder "${localPath}"? Type "delete" to confirm: `);
+                if (confirm.trim().toLowerCase() !== 'delete') {
+                    console.log('Skipped local folder deletion.');
+                    return;
+                }
+            }
+            else if (!opts.yes) {
+                console.log('Skipping local folder deletion because confirmation is not possible in non-interactive mode.');
+                return;
+            }
+            rmSync(localPath, { recursive: true, force: false });
+            console.log(`Deleted local source folder: ${localPath}`);
+        }
     }
     catch (e) {
         console.error(`Uninstall failed: ${e.message}`);

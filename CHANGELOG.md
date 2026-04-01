@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.15] - 2026-04-01
+
+### Added
+
+- Added `work-timer uninstall --purge-local <path>` to optionally remove a local Work-Timer source folder after uninstall (with safety checks and explicit confirmation)
+
+### Changed
+
+- Setup/install docs now include an idempotent source-install flow that works when the target folder already exists (pull/update instead of failing clone)
+
 ## [1.3.14] - 2026-04-01
 
 ### Added
