@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.9] - 2026-04-01
+
+### Added
+
+- Added `work-timer mcp list` to detect known MCP client targets and show their local config status
+- Added `work-timer mcp install` to programmatically register/update the Work-Timer MCP server in supported local client configs
+- New installer options: `--clients`, `--server-path`, `--dry-run`, and `--create-missing`
+- Automatic backup creation before rewriting existing MCP JSON configs
+
+### Changed
+
+- Setup and CLI docs now include the new MCP installer workflow for local clients
+
 ## [1.3.8] - 2026-03-31
 
 ### Fixed

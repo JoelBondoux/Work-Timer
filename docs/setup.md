@@ -129,6 +129,48 @@ Manually create `~/.work-timer/config.json`:
 
 To use Work-Timer with an AI assistant, add it as an MCP server.
 
+### Option A: Auto-install into local MCP client configs
+
+Work-Timer can programmatically detect and patch supported local client configs.
+
+Preview what would change:
+
+```bash
+work-timer mcp install --dry-run
+```
+
+Install/update in detected clients:
+
+```bash
+work-timer mcp install
+```
+
+Create missing config files/directories when needed:
+
+```bash
+work-timer mcp install --create-missing
+```
+
+Target specific clients only:
+
+```bash
+work-timer mcp install --clients claude-desktop,cursor,vscode
+```
+
+List known targets and detection status:
+
+```bash
+work-timer mcp list
+```
+
+Supported client IDs: `claude-desktop`, `cursor`, `vscode`, `vscode-insiders`, `claude-code`, `chatgpt-desktop`.
+
+Notes:
+- Existing JSON configs are backed up automatically before rewrite (`.bak.<timestamp>`).
+- ChatGPT Desktop currently remains manual (in-app connector flow) and is reported as manual by the installer.
+
+### Option B: Manual client setup
+
 ### Claude Desktop
 
 Edit (or create) your Claude Desktop config file:

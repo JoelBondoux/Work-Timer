@@ -27,6 +27,14 @@ import { Writable } from 'node:stream';
 import { spawnSync } from 'node:child_process';
 import type { SpawnSyncOptionsWithStringEncoding } from 'node:child_process';
 import { get } from 'node:https';
+import { fileURLToPath } from 'node:url';
+import {
+  applyCommandMcpInstall,
+  applyJsonMcpInstall,
+  discoverMcpTargets,
+  parseClientIds,
+  type McpClientId,
+} from './mcp-install.js';
 
 function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -39,7 +47,7 @@ function prompt(question: string): Promise<string> {
 }
 
 const program = new Command();
-const CLI_VERSION = '1.3.8';
+const CLI_VERSION = '1.3.9';
 const GITHUB_TARBALL_URL =
   'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL =
@@ -281,6 +289,11 @@ function performGlobalUpdate(): string {
   return join(globalRoot, 'work-timer', 'dist', 'mcp', 'server.js');
 }
 
+function getBundledMcpServerPath(): string {
+  const currentFilePath = fileURLToPath(import.meta.url);
+  return join(dirname(currentFilePath), '..', 'mcp', 'server.js');
+}
+
 async function maybeAnnounceUpdate(argv: string[]): Promise<void> {
   if (process.env.WORK_TIMER_DISABLE_UPDATE_CHECK === '1') return;
   if (process.env.CI === 'true') return;
@@ -442,6 +455,101 @@ program
     console.log(`\nConfig saved to ${configPath}`);
     console.log('Work-Timer is ready! Try: work-timer start my-project');
     rl.close();
+  });
+
+// --- MCP client installation ---
+
+const mcpCmd = program.command('mcp').description('Manage MCP client registrations');
+
+mcpCmd
+  .command('list')
+  .description('List known MCP clients and whether their local config is detected')
+  .action(() => {
+    const targets = discoverMcpTargets();
+    console.log('Known MCP client targets:');
+    for (const target of targets) {
+      if (target.kind === 'json') {
+        console.log(`- ${target.id}: ${target.label} (${target.exists ? 'detected' : 'not found'})`);
+        console.log(`  path: ${target.configPath}`);
+      } else if (target.kind === 'command') {
+        console.log(`- ${target.id}: ${target.label} (command-based)`);
+      } else {
+        console.log(`- ${target.id}: ${target.label} (manual setup)`);
+      }
+    }
+  });
+
+mcpCmd
+  .command('install')
+  .description('Install or update Work-Timer MCP registration in supported local client configs')
+  .option(
+    '--clients <ids>',
+    'Comma-separated client ids: claude-desktop,cursor,vscode,vscode-insiders,claude-code,chatgpt-desktop'
+  )
+  .option('--server-path <path>', 'Absolute path to MCP server.js (defaults to this Work-Timer install)')
+  .option('--create-missing', 'Create missing JSON config files/directories for supported clients')
+  .option('--dry-run', 'Preview changes without writing files or running commands')
+  .action((opts: {
+    clients?: string;
+    serverPath?: string;
+    createMissing?: boolean;
+    dryRun?: boolean;
+  }) => {
+    try {
+      const serverPath = opts.serverPath ?? getBundledMcpServerPath();
+      const requestedIds: McpClientId[] | null = opts.clients ? parseClientIds(opts.clients) : null;
+      const targets = discoverMcpTargets().filter((target) =>
+        requestedIds ? requestedIds.includes(target.id) : true
+      );
+
+      if (targets.length === 0) {
+        console.log('No matching MCP clients selected.');
+        return;
+      }
+
+      console.log(`Using MCP server path: ${serverPath}`);
+
+      const results = targets.map((target) => {
+        if (target.kind === 'json') {
+          return applyJsonMcpInstall({
+            target,
+            serverPath,
+            dryRun: Boolean(opts.dryRun),
+            createMissing: Boolean(opts.createMissing),
+          });
+        }
+
+        if (target.kind === 'command') {
+          return applyCommandMcpInstall({
+            target,
+            serverPath,
+            dryRun: Boolean(opts.dryRun),
+          });
+        }
+
+        return {
+          target,
+          status: 'skipped-manual' as const,
+          message: target.notes,
+        };
+      });
+
+      for (const result of results) {
+        console.log(`- ${result.target.id}: ${result.status}`);
+        console.log(`  ${result.message}`);
+        if (result.backupPath) {
+          console.log(`  backup: ${result.backupPath}`);
+        }
+      }
+
+      const errors = results.filter((result) => result.status === 'error');
+      if (errors.length > 0) {
+        process.exit(1);
+      }
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exit(1);
+    }
   });
 
 // --- Timer commands ---

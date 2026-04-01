@@ -6,6 +6,7 @@ A zero-cost, open-source work timer and billing tool built for solo contractors 
 
 - **Natural language control** — "Start a timer for Project Alpha", "How much time on Client X this month?"
 - **MCP server** — Works with Claude Desktop, ChatGPT, GitHub Copilot, Cursor, and any MCP-compatible client
+- **MCP auto-installer** — Programmatically detects and patches supported local MCP client configs with backup + dry-run support
 - **CLI** — Full command-line interface for quick manual use
 - **Built-in maintenance** — Includes `work-timer update`, `work-timer uninstall`, and update-available prompts
 - **Safe destructive operations** — Confirmation flow in CLI and `dry_run` + `confirm_phrase` safety gates in MCP for destructive actions
@@ -65,6 +66,13 @@ If you need to bootstrap a broken older install manually, use the same tarball i
 
 ```bash
 npm install -g https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master
+```
+
+Optional: auto-register Work-Timer in detected local MCP clients:
+
+```bash
+work-timer mcp install --dry-run
+work-timer mcp install
 ```
 
 Or set environment variables:

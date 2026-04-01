@@ -39,6 +39,40 @@ Behavior:
 - Prompts for confirmation unless `--yes` is passed
 - If your current terminal still resolves `work-timer` after uninstall, open a new terminal session
 
+### `work-timer mcp list`
+
+List known MCP client targets and whether their local config is detected.
+
+```bash
+work-timer mcp list
+```
+
+### `work-timer mcp install`
+
+Programmatically install/update Work-Timer MCP registration across supported local clients.
+
+```bash
+work-timer mcp install
+work-timer mcp install --dry-run
+work-timer mcp install --create-missing
+work-timer mcp install --clients claude-desktop,cursor,vscode
+work-timer mcp install --server-path /absolute/path/to/server.js
+```
+
+Options:
+
+| Flag | Description |
+|------|-------------|
+| `--clients <ids>` | Comma-separated client IDs (`claude-desktop,cursor,vscode,vscode-insiders,claude-code,chatgpt-desktop`) |
+| `--server-path <path>` | Override MCP server path (defaults to this Work-Timer install's `dist/mcp/server.js`) |
+| `--create-missing` | Create missing JSON config files/directories for supported clients |
+| `--dry-run` | Preview operations without writing files or running commands |
+
+Behavior:
+- Existing config files are backed up before rewrite (`.bak.<timestamp>`).
+- `claude-code` uses command-mode install via `claude mcp add ...`.
+- `chatgpt-desktop` is reported as manual because connector creation is currently in-app.
+
 ## Timer Commands
 
 ### `work-timer start <project>`
