@@ -41,7 +41,8 @@ describe('resolveMcpOutputPath', () => {
   it('rejects absolute paths', () => {
     const root = mkdtempSync(join(tmpdir(), 'work-timer-security-'));
     try {
-      expect(() => resolveMcpOutputPath('C:/Windows/system32/config.csv', '.csv', root)).toThrow(
+      const absolutePath = join(root, 'already-absolute.csv');
+      expect(() => resolveMcpOutputPath(absolutePath, '.csv', root)).toThrow(
         'output_path must be relative'
       );
     } finally {
