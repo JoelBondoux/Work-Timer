@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.28] - 2026-04-01
+
+### Fixed
+
+- Installer dirty-check now ignores generated `dist/`-only tracked changes so routine local build artifacts do not block in-place updates.
+- Existing safety behavior is preserved for meaningful local repository edits outside `dist/`, with `WORK_TIMER_ALLOW_DIRTY=1` still available as an explicit override.
+
 ## [1.3.27] - 2026-04-01
 
 ### Added

@@ -26,12 +26,12 @@ curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/insta
 
 These install scripts automatically detect whether `~/Work-Timer` already exists and then clone or update, install dependencies, build, and run `npm link`.
 
-For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.26`.
+For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.27`.
 
 Installer behavior notes:
 - Existing valid Work-Timer installs are updated in place.
 - If the target folder exists but is not a Work-Timer install, it is moved to a timestamped backup and installation continues in the requested folder.
-- If an existing Work-Timer install has uncommitted changes, installer stops by default; set `WORK_TIMER_ALLOW_DIRTY=1` only when you intentionally want to proceed.
+- If an existing Work-Timer install has uncommitted changes, installer stops by default; generated `dist/`-only changes are ignored, and you can still set `WORK_TIMER_ALLOW_DIRTY=1` when you intentionally want to proceed.
 - If the installed version already matches the requested version, installer asks whether to `repair` or `cancel`.
 - In non-interactive environments, set `WORK_TIMER_REPAIR_MODE=repair` to force repair, or `WORK_TIMER_REPAIR_MODE=cancel` to skip.
 - Speed up branch-switch testing by skipping build and relink:

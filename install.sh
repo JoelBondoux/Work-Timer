@@ -79,6 +79,11 @@ confirm_repair_or_cancel() {
   esac
 }
 
+meaningful_dirty_status() {
+  # Ignore generated dist artifacts; block only meaningful tracked changes.
+  git status --porcelain --untracked-files=no -- . ':(exclude)dist' 2>/dev/null || true
+}
+
 install_dependencies() {
   if [ -f "package-lock.json" ]; then
     echo "Installing dependencies with npm ci..."
@@ -117,7 +122,7 @@ if [ -d "$REPO_DIR" ]; then
     ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
     if [[ -n "$ORIGIN_URL" && "$ORIGIN_URL" == *"JoelBondoux/Work-Timer"* ]]; then
       EXISTING_INSTALL=1
-      if [[ "$ALLOW_DIRTY" != "1" && -n "$(git status --porcelain)" ]]; then
+      if [[ "$ALLOW_DIRTY" != "1" && -n "$(meaningful_dirty_status)" ]]; then
         echo "Existing Work-Timer installation has uncommitted changes: $REPO_DIR" >&2
         echo "Clean/stash changes first, or rerun with WORK_TIMER_ALLOW_DIRTY=1 to proceed." >&2
         exit 1
