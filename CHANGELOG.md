@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.24] - 2026-04-01
+
+### Fixed
+
+- PowerShell installer now invokes `npm` subcommands directly (`npm ci`, `npm install`, `npm run build`, `npm link`) with explicit exit-code checks to avoid argument-forwarding ambiguity.
+- Improves installer reliability for one-line `install.ps1` usage where wrapped npm invocations could still be interpreted as bare `npm` in some shells.
+
 ## [1.3.23] - 2026-04-01
 
 ### Fixed

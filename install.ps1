@@ -26,20 +26,29 @@ function Install-Dependencies {
   if (Test-Path "package-lock.json") {
     Write-Host "Installing dependencies with npm ci..."
     try {
-      Invoke-External -Command "npm" -CommandArgs @("ci") -FailureMessage "npm ci failed"
+      & npm ci
+      if ($LASTEXITCODE -ne 0) {
+        throw "npm ci failed (exit code: $LASTEXITCODE)"
+      }
     } catch {
       if (($env:OS -eq "Windows_NT") -and (Test-Path "node_modules")) {
         Write-Host "npm ci failed on Windows (possible file lock). Retrying once after clearing node_modules..."
         Remove-Item "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
-        Invoke-External -Command "npm" -CommandArgs @("ci") -FailureMessage "npm ci retry failed"
+        & npm ci
+        if ($LASTEXITCODE -ne 0) {
+          throw "npm ci retry failed (exit code: $LASTEXITCODE)"
+        }
       } else {
         throw
       }
     }
   } else {
     Write-Host "Installing dependencies with npm install..."
-    Invoke-External -Command "npm" -CommandArgs @("install") -FailureMessage "npm install failed"
+    & npm install
+    if ($LASTEXITCODE -ne 0) {
+      throw "npm install failed (exit code: $LASTEXITCODE)"
+    }
   }
 }
 
@@ -117,14 +126,20 @@ Install-Dependencies
 
 if (-not $SkipBuild) {
   Write-Host "Building project..."
-  Invoke-External -Command "npm" -CommandArgs @("run", "build") -FailureMessage "npm run build failed"
+  & npm run build
+  if ($LASTEXITCODE -ne 0) {
+    throw "npm run build failed (exit code: $LASTEXITCODE)"
+  }
 } else {
   Write-Host "Skipping build (requested)."
 }
 
 if (-not $SkipLink) {
   Write-Host "Linking work-timer globally..."
-  Invoke-External -Command "npm" -CommandArgs @("link") -FailureMessage "npm link failed"
+  & npm link
+  if ($LASTEXITCODE -ne 0) {
+    throw "npm link failed (exit code: $LASTEXITCODE)"
+  }
 }
 
 Write-Host ""
