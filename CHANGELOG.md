@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.23] - 2026-04-01
+
+### Fixed
+
+- Fixed PowerShell installer command invocation so `npm` receives expected arguments (`ci`, `install`, `run build`, `link`) reliably instead of occasionally executing without subcommands.
+- Resolved argument forwarding bug in `install.ps1` by avoiding the reserved automatic `$args` variable name in the command wrapper.
+
 ## [1.3.22] - 2026-04-01
 
 ### Fixed

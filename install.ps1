@@ -12,11 +12,11 @@ $RepoUrl = "https://github.com/JoelBondoux/Work-Timer.git"
 function Invoke-External {
   param(
     [Parameter(Mandatory = $true)][string]$Command,
-    [Parameter(Mandatory = $false)][string[]]$Args = @(),
+    [Parameter(Mandatory = $false)][string[]]$CommandArgs = @(),
     [Parameter(Mandatory = $true)][string]$FailureMessage
   )
 
-  & $Command @Args
+  & $Command @CommandArgs
   if ($LASTEXITCODE -ne 0) {
     throw "$FailureMessage (exit code: $LASTEXITCODE)"
   }
@@ -26,20 +26,20 @@ function Install-Dependencies {
   if (Test-Path "package-lock.json") {
     Write-Host "Installing dependencies with npm ci..."
     try {
-      Invoke-External -Command "npm" -Args @("ci") -FailureMessage "npm ci failed"
+      Invoke-External -Command "npm" -CommandArgs @("ci") -FailureMessage "npm ci failed"
     } catch {
       if (($env:OS -eq "Windows_NT") -and (Test-Path "node_modules")) {
         Write-Host "npm ci failed on Windows (possible file lock). Retrying once after clearing node_modules..."
         Remove-Item "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
-        Invoke-External -Command "npm" -Args @("ci") -FailureMessage "npm ci retry failed"
+        Invoke-External -Command "npm" -CommandArgs @("ci") -FailureMessage "npm ci retry failed"
       } else {
         throw
       }
     }
   } else {
     Write-Host "Installing dependencies with npm install..."
-    Invoke-External -Command "npm" -Args @("install") -FailureMessage "npm install failed"
+    Invoke-External -Command "npm" -CommandArgs @("install") -FailureMessage "npm install failed"
   }
 }
 
@@ -95,8 +95,8 @@ if (Test-Path $installDir) {
     if ($installDirty) {
       if ($isDedicatedInstallerDir) {
         Write-Host "Detected uncommitted changes in installer directory. Resetting it to a clean state..."
-        Invoke-External -Command "git" -Args @("reset", "--hard", "HEAD") -FailureMessage "git reset failed"
-        Invoke-External -Command "git" -Args @("clean", "-fd") -FailureMessage "git clean failed"
+        Invoke-External -Command "git" -CommandArgs @("reset", "--hard", "HEAD") -FailureMessage "git reset failed"
+        Invoke-External -Command "git" -CommandArgs @("clean", "-fd") -FailureMessage "git clean failed"
       } else {
         throw "Install directory has uncommitted changes: $installDir. Clean it manually or rerun with WORK_TIMER_ALLOW_DIRTY=1 if you intentionally want to keep local edits."
       }
@@ -104,12 +104,12 @@ if (Test-Path $installDir) {
   }
 
   Write-Host "Existing install repository detected. Updating..."
-  Invoke-External -Command "git" -Args @("fetch", "origin", $RepoRef, "--tags") -FailureMessage "git fetch failed"
-  Invoke-External -Command "git" -Args @("checkout", $RepoRef) -FailureMessage "git checkout failed"
-  Invoke-External -Command "git" -Args @("pull", "--ff-only", "origin", $RepoRef) -FailureMessage "git pull failed"
+  Invoke-External -Command "git" -CommandArgs @("fetch", "origin", $RepoRef, "--tags") -FailureMessage "git fetch failed"
+  Invoke-External -Command "git" -CommandArgs @("checkout", $RepoRef) -FailureMessage "git checkout failed"
+  Invoke-External -Command "git" -CommandArgs @("pull", "--ff-only", "origin", $RepoRef) -FailureMessage "git pull failed"
 } else {
   Write-Host "No install repository detected. Cloning..."
-  Invoke-External -Command "git" -Args @("clone", "--branch", $RepoRef, "--single-branch", $RepoUrl, $installDir) -FailureMessage "git clone failed"
+  Invoke-External -Command "git" -CommandArgs @("clone", "--branch", $RepoRef, "--single-branch", $RepoUrl, $installDir) -FailureMessage "git clone failed"
   Set-Location $installDir
 }
 
@@ -117,14 +117,14 @@ Install-Dependencies
 
 if (-not $SkipBuild) {
   Write-Host "Building project..."
-  Invoke-External -Command "npm" -Args @("run", "build") -FailureMessage "npm run build failed"
+  Invoke-External -Command "npm" -CommandArgs @("run", "build") -FailureMessage "npm run build failed"
 } else {
   Write-Host "Skipping build (requested)."
 }
 
 if (-not $SkipLink) {
   Write-Host "Linking work-timer globally..."
-  Invoke-External -Command "npm" -Args @("link") -FailureMessage "npm link failed"
+  Invoke-External -Command "npm" -CommandArgs @("link") -FailureMessage "npm link failed"
 }
 
 Write-Host ""
