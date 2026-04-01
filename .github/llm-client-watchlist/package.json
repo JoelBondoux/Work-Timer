@@ -1,0 +1,12 @@
+{
+  "name": "work-timer-llm-client-watchlist",
+  "private": true,
+  "description": "Version watchlist for external LLM client tooling that may impact MCP installer compatibility.",
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.89",
+    "@openai/codex": "^0.118.0",
+    "ollama": "^0.6.3"
+  }
+}

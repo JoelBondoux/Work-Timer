@@ -140,6 +140,14 @@ describe('myFeature', () => {
 
 ## Pull Request Guidelines
 
+## Dependency Update Automation
+
+- Dependabot is configured in `/.github/dependabot.yml`
+- Root npm dependencies (`/package.json`) are updated automatically on a weekly schedule
+- External LLM client tooling is tracked separately in `/.github/llm-client-watchlist/package.json`
+- Keep the watchlist focused on integrations that can affect MCP installer compatibility to avoid noisy update PRs
+- When adding or removing supported client integrations, update both the MCP installer logic and the watchlist manifest
+
 ### Before Submitting
 
 1. Run `npm test` — all tests must pass

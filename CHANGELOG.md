@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.10] - 2026-04-01
+
+### Added
+
+- Added Dependabot configuration for all npm dependencies in the repository root (`/.github/dependabot.yml`)
+- Added a dedicated npm watchlist manifest for external LLM client tooling at `/.github/llm-client-watchlist/package.json`
+- Dependabot now checks tracked client tooling versions (Claude Code, Codex CLI, Ollama npm package) separately so MCP installer compatibility changes are easier to spot
+
+### Changed
+
+- Dependency update strategy now separates core project dependency updates from external client watchlist updates
+
 ## [1.3.9] - 2026-04-01
 
 ### Added
