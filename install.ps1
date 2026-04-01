@@ -89,6 +89,20 @@ if (Test-Path $installDir) {
     throw "Install directory does not look like Work-Timer origin: $installOrigin"
   }
 
+  $isDedicatedInstallerDir = $installDir -ne $RepoDir
+  if (-not $AllowDirty) {
+    $installDirty = (git status --porcelain 2>$null)
+    if ($installDirty) {
+      if ($isDedicatedInstallerDir) {
+        Write-Host "Detected uncommitted changes in installer directory. Resetting it to a clean state..."
+        Invoke-External -Command "git" -Args @("reset", "--hard", "HEAD") -FailureMessage "git reset failed"
+        Invoke-External -Command "git" -Args @("clean", "-fd") -FailureMessage "git clean failed"
+      } else {
+        throw "Install directory has uncommitted changes: $installDir. Clean it manually or rerun with WORK_TIMER_ALLOW_DIRTY=1 if you intentionally want to keep local edits."
+      }
+    }
+  }
+
   Write-Host "Existing install repository detected. Updating..."
   Invoke-External -Command "git" -Args @("fetch", "origin", $RepoRef, "--tags") -FailureMessage "git fetch failed"
   Invoke-External -Command "git" -Args @("checkout", $RepoRef) -FailureMessage "git checkout failed"

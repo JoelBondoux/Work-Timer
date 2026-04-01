@@ -81,6 +81,18 @@ if [ -d "$INSTALL_DIR" ]; then
     exit 1
   fi
 
+  if [[ "$ALLOW_DIRTY" != "1" && -n "$(git status --porcelain)" ]]; then
+    if [[ "$INSTALL_DIR" != "$REPO_DIR" ]]; then
+      echo "Detected uncommitted changes in installer directory. Resetting it to a clean state..."
+      git reset --hard HEAD
+      git clean -fd
+    else
+      echo "Install directory has uncommitted changes: $INSTALL_DIR" >&2
+      echo "Clean it manually or rerun with WORK_TIMER_ALLOW_DIRTY=1 if you intentionally want to keep local edits." >&2
+      exit 1
+    fi
+  fi
+
   echo "Existing install repository detected. Updating..."
   git fetch origin "$REPO_REF" --tags
   git checkout "$REPO_REF"
