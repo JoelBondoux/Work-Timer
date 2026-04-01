@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.20] - 2026-04-01
+
+### Fixed
+
+- Hardened installer command execution so failed native commands (`git`, `npm`) now stop the install immediately instead of continuing to later steps.
+- PowerShell installer now retries `npm ci` once on Windows after clearing `node_modules` to handle common `EPERM` lock errors on native binaries.
+- Shell installer now includes a single retry path for Windows-like shells when `npm ci` fails due to transient file locks.
+
 ## [1.3.19] - 2026-04-01
 
 ### Added

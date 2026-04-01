@@ -18,6 +18,25 @@ require_cmd git
 require_cmd node
 require_cmd npm
 
+install_dependencies() {
+  if [ -f "package-lock.json" ]; then
+    echo "Installing dependencies with npm ci..."
+    if ! npm ci; then
+      if [ "$(uname -s 2>/dev/null || echo unknown)" = "MINGW64_NT" ] || [ "$(uname -s 2>/dev/null || echo unknown)" = "MSYS_NT" ] || [ "$(uname -s 2>/dev/null || echo unknown)" = "CYGWIN_NT" ]; then
+        echo "npm ci failed on Windows-like shell (possible file lock). Retrying once after clearing node_modules..."
+        rm -rf node_modules || true
+        sleep 2
+        npm ci
+      else
+        return 1
+      fi
+    fi
+  else
+    echo "Installing dependencies with npm install..."
+    npm install
+  fi
+}
+
 echo "Work-Timer installer"
 echo "Target directory: $REPO_DIR"
 echo "Source ref: $REPO_REF"
@@ -67,13 +86,7 @@ else
   cd "$INSTALL_DIR"
 fi
 
-if [ -f "package-lock.json" ]; then
-  echo "Installing dependencies with npm ci..."
-  npm ci
-else
-  echo "Installing dependencies with npm install..."
-  npm install
-fi
+install_dependencies
 
 if [ "$SKIP_BUILD" != "1" ]; then
   echo "Building project..."
