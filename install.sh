@@ -29,7 +29,10 @@ install_dependencies() {
           echo "npm ci failed on Windows-like shell (possible file lock). Retrying once after clearing node_modules..."
           rm -rf node_modules || true
           sleep 2
-          npm ci
+          if ! npm ci; then
+            echo "npm ci retry failed on Windows-like shell. Falling back to npm install..."
+            npm install
+          fi
           ;;
         *)
           return 1

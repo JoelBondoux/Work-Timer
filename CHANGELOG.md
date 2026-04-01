@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.25] - 2026-04-01
+
+### Fixed
+
+- Hardened installer dependency recovery for persistent Windows `EPERM` file-lock failures on native modules.
+- PowerShell installer now attempts multi-pass `node_modules` cleanup and falls back to `npm install` when `npm ci` retry still fails due to locks.
+- Shell installer now also falls back to `npm install` after a failed Windows-like `npm ci` retry.
+
 ## [1.3.24] - 2026-04-01
 
 ### Fixed
