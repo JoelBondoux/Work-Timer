@@ -168,7 +168,24 @@ Configure these GitHub branch protection settings for `master`:
 1. Require a pull request before merging
 2. Require status checks to pass before merging
 3. Block force pushes
-4. Optionally require at least one approval
+4. Optional for solo-maintainer repos: set required approvals to `0` while keeping required status checks enabled
+
+### Merge Administration (Agent-Led)
+
+For this repository, merge administration is delegated to the coding agent by default.
+
+- The agent should perform review + validation and proceed when results are clear.
+- The agent should escalate to the maintainer only when there is a real decision to make: trade-off between valid options, unresolved risk, or policy ambiguity.
+- Escalations should include concise options, risks, and a recommended default path.
+
+### AI Safety Policy Files
+
+Repository AI agents must follow the safety and security policy defined in:
+
+- `.github/copilot-instructions.md`
+- `CLAUDE.md`
+
+When updating one policy, keep both files aligned so agent behavior stays consistent across tools.
 
 ## Dependency Update Automation
 
