@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.22] - 2026-04-01
+
+### Fixed
+
+- Installer updates now recover automatically when the dedicated installer clone (`*-installer`) contains stale uncommitted changes that would otherwise block `git pull`.
+- PowerShell installer now hard-resets and cleans only the dedicated installer clone before update (never the protected primary repo path) when `WORK_TIMER_ALLOW_DIRTY` is not set.
+- Shell installer now applies the same dedicated-clone reset/clean behavior for consistency with PowerShell.
+
 ## [1.3.21] - 2026-04-01
 
 ### Added
