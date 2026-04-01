@@ -18,6 +18,20 @@ npm install
 npm run build
 ```
 
+### Branching Model (Production-Safe)
+
+- `master` is production-ready only.
+- Do not commit directly to `master` for feature work.
+- Create short-lived branches from `master` for every change.
+- Open a pull request back into `master`.
+- Merge only after required checks pass (`npm test`, `npm run build`).
+
+Suggested branch names:
+
+- `feature/<short-description>`
+- `fix/<short-description>`
+- `chore/<short-description>`
+
 ### Development Workflow
 
 ```bash
@@ -140,6 +154,15 @@ describe('myFeature', () => {
 
 ## Pull Request Guidelines
 
+### Protected Branch Rules (Recommended)
+
+Configure these GitHub branch protection settings for `master`:
+
+1. Require a pull request before merging
+2. Require status checks to pass before merging
+3. Block force pushes
+4. Optionally require at least one approval
+
 ## Dependency Update Automation
 
 - Dependabot is configured in `/.github/dependabot.yml`
@@ -154,6 +177,7 @@ describe('myFeature', () => {
 2. Run `npm run build` — no TypeScript errors
 3. Add tests for new features or bug fixes
 4. Update documentation if the change affects user-facing behavior
+5. Confirm your branch is not `master`
 
 ### PR Format
 

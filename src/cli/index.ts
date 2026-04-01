@@ -49,7 +49,7 @@ function prompt(question: string): Promise<string> {
 }
 
 const program = new Command();
-const CLI_VERSION = '1.3.15';
+const CLI_VERSION = '1.3.16';
 const GITHUB_TARBALL_URL =
   'https://codeload.github.com/JoelBondoux/Work-Timer/tar.gz/refs/heads/master';
 const GITHUB_PACKAGE_JSON_URL =

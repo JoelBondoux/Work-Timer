@@ -12,33 +12,23 @@ Complete instructions for installing and configuring Work-Timer.
 
 ### From Source (Recommended)
 
-```bash
-git clone https://github.com/JoelBondoux/Work-Timer.git
-cd Work-Timer
-npm install
-npm run build
-```
-
-If `Work-Timer` already exists locally, use this idempotent PowerShell flow instead:
+Windows PowerShell (one line):
 
 ```powershell
-$repoDir = Join-Path $HOME "Work-Timer"
-if (Test-Path $repoDir) {
-  Set-Location $repoDir
-  git fetch origin
-  git checkout master
-  git pull --ff-only
-} else {
-  git clone https://github.com/JoelBondoux/Work-Timer.git $repoDir
-  Set-Location $repoDir
-}
-
-npm install
-npm run build
-npm link
+irm https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/install.ps1 | iex
 ```
 
-To make the `work-timer` command available globally:
+macOS / Linux (one line):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JoelBondoux/Work-Timer/master/install.sh | bash
+```
+
+These install scripts automatically detect whether `~/Work-Timer` already exists and then clone or update, install dependencies, build, and run `npm link`.
+
+For production deployments, pin to a release tag by replacing `master` in the URL with a tag such as `v1.3.16`.
+
+The install scripts already run `npm link` for you. If you skip linking and need to run it manually:
 
 ```bash
 npm link

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.16] - 2026-04-01
+
+### Changed
+
+- Installation docs now use one-line root installer URLs (`install.ps1` and `install.sh`) so setup no longer depends on a `scripts/` path
+- Contributing guidance now documents a production-safe trunk-based workflow: short-lived feature branches, PR-only merges, and protected `master` recommendations
+
+### Added
+
+- Added production-ready root installers (`install.ps1`, `install.sh`) with prerequisite checks, safe existing-repo validation, deterministic dependency install (`npm ci` when lockfile exists), and optional ref pinning via `WORK_TIMER_REPO_REF`
+- Added repository instruction files for coding assistants: `.github/copilot-instructions.md` and `CLAUDE.md`, aligned to production-only `master` workflow
+
 ## [1.3.15] - 2026-04-01
 
 ### Added
