@@ -193,6 +193,17 @@ Brief description of what changed and why.
 - How to verify the change works
 ```
 
+### Production Cleanup PR Checklist
+
+Use this checklist when a PR's goal is to remove debug/dev-only artifacts before release:
+
+1. Branch from `master` using a `fix/` branch name (for example: `fix/production-cleanup`).
+2. Remove only production-risk artifacts (debug code, temporary release tags, conflict markers, accidental dev-only content).
+3. Keep useful development context in the PR description, issue discussion, or a follow-up branch instead of shipping it to `master`.
+4. Run `npm run check:production`, `npm test`, and `npm run build`.
+5. Include a short "before vs after" summary in the PR body.
+6. Merge only through PR after required checks pass.
+
 ### Code Style
 
 - TypeScript strict mode is enabled — no `any` types
