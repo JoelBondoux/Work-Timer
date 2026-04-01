@@ -165,6 +165,44 @@ function Get-DistDirtyStatus() {
   }
 }
 
+function Get-GitBranchName() {
+  try {
+    $branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
+    if ($LASTEXITCODE -eq 0 -and $branch) {
+      return $branch
+    }
+  } catch {
+    # Ignore and fall back.
+  }
+  return '<unknown>'
+}
+
+function Get-DirtyPreview([string]$DirtyStatus, [int]$MaxLines = 5) {
+  if (-not $DirtyStatus) {
+    return '  (none)'
+  }
+
+  $lines = @($DirtyStatus -split "`r?`n" | Where-Object { $_ -and $_.Trim().Length -gt 0 })
+  if ($lines.Count -eq 0) {
+    return '  (none)'
+  }
+
+  $shown = $lines | Select-Object -First $MaxLines | ForEach-Object {
+    $line = $_.TrimEnd()
+    if ($line.Length -ge 4) {
+      "  - $($line.Substring(3).Trim())"
+    } else {
+      "  - $line"
+    }
+  }
+
+  if ($lines.Count -gt $MaxLines) {
+    $shown += "  - ...and $($lines.Count - $MaxLines) more"
+  }
+
+  return ($shown -join "`n")
+}
+
 function Resolve-DistOnlyDirtyBeforePull([string]$Path) {
   $meaningfulDirty = Get-MeaningfulDirtyStatus
   if ($meaningfulDirty) {
@@ -198,7 +236,9 @@ if (Test-Path $RepoDir) {
       if (-not $AllowDirty) {
         $dirty = Get-MeaningfulDirtyStatus
         if ($dirty) {
-          throw "Existing Work-Timer installation has uncommitted changes: $RepoDir. Clean/stash changes first, or rerun with WORK_TIMER_ALLOW_DIRTY=1 to proceed."
+          $branch = Get-GitBranchName
+          $preview = Get-DirtyPreview -DirtyStatus $dirty -MaxLines 5
+          throw "Existing Work-Timer installation has uncommitted changes: $RepoDir.`nBranch: $branch`nBlocking files (first 5):`n$preview`nClean/stash changes first, or rerun with WORK_TIMER_ALLOW_DIRTY=1 to proceed."
         }
       }
     } else {

@@ -88,6 +88,32 @@ dist_dirty_status() {
   git status --porcelain --untracked-files=no -- dist 2>/dev/null || true
 }
 
+git_branch_name() {
+  git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "<unknown>"
+}
+
+dirty_preview() {
+  local dirty_text="$1"
+  local max_lines="${2:-5}"
+  local count=0
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    count=$((count + 1))
+    if [ "$count" -le "$max_lines" ]; then
+      local path="$line"
+      if [ "${#line}" -ge 4 ]; then
+        path="${line:3}"
+      fi
+      printf '  - %s\n' "$path"
+    fi
+  done <<< "$dirty_text"
+
+  if [ "$count" -gt "$max_lines" ]; then
+    printf '  - ...and %s more\n' "$((count - max_lines))"
+  fi
+}
+
 resolve_dist_only_dirty_before_pull() {
   if [ -n "$(meaningful_dirty_status)" ]; then
     return
@@ -137,8 +163,13 @@ if [ -d "$REPO_DIR" ]; then
     ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
     if [[ -n "$ORIGIN_URL" && "$ORIGIN_URL" == *"JoelBondoux/Work-Timer"* ]]; then
       EXISTING_INSTALL=1
-      if [[ "$ALLOW_DIRTY" != "1" && -n "$(meaningful_dirty_status)" ]]; then
+      dirty="$(meaningful_dirty_status)"
+      if [[ "$ALLOW_DIRTY" != "1" && -n "$dirty" ]]; then
+        branch="$(git_branch_name)"
         echo "Existing Work-Timer installation has uncommitted changes: $REPO_DIR" >&2
+        echo "Branch: $branch" >&2
+        echo "Blocking files (first 5):" >&2
+        dirty_preview "$dirty" 5 >&2
         echo "Clean/stash changes first, or rerun with WORK_TIMER_ALLOW_DIRTY=1 to proceed." >&2
         exit 1
       fi
