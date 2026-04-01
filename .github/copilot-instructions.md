@@ -50,3 +50,9 @@
 
 - Version tags are cut from `master` only.
 - If a PR is not production-ready, do not merge it.
+
+## PR Review Automation
+
+- When a PR is in a `REVIEW_REQUIRED` state, the active coding agent must run a review automatically.
+- The review must prioritize risks/regressions first (correctness, safety, behavior changes, and missing tests).
+- The agent must provide clear merge recommendations (approve/changes requested) with concrete follow-up actions.
