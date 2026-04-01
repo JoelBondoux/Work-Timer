@@ -1,6 +1,6 @@
 {
   "name": "work-timer",
-  "version": "1.3.18",
+  "version": "1.3.19",
   "description": "A zero-cost, local-first work timer and billing tool for solo contractors. Control via natural language through any MCP-compatible LLM client or CLI.",
   "type": "module",
   "main": "./dist/mcp/server.js",

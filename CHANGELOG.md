@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.19] - 2026-04-01
+
+### Added
+
+- Added new roadmap document at `docs/roadmap.md`.
+- Added a planned item for a hosted remote MCP service to capture future multi-client access work.
+
+### Changed
+
+- Linked the roadmap from the main documentation table in `README.md`.
+
 ## [1.3.18] - 2026-04-01
 
 ### Added

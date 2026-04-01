@@ -143,6 +143,7 @@ Then just talk naturally:
 | [Billing Logic](docs/billing.md) | How duration, rounding, and amounts are calculated |
 | [Export Guide](docs/export.md) | CSV and XLSX export formats and accounting software import |
 | [Invoicing Guide](docs/invoicing.md) | Tracking invoices and payments |
+| [Roadmap](docs/roadmap.md) | Planned future enhancements and priorities |
 | [Contributing](docs/contributing.md) | Developer setup, architecture, and PR guidelines |
 
 ## How It Works
