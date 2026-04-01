@@ -20,6 +20,7 @@
 - Keep PRs scoped to one concern.
 - Add tests for logic changes.
 - Update docs for user-facing changes.
+- For user-facing PowerShell/terminal output formatting, follow `docs/powershell-output-style-guide.md` as the default standard for current and future output UX changes.
 
 ## Safety And Security First Policy
 
