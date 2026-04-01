@@ -41,6 +41,11 @@ These scripts auto-detect whether your local `Work-Timer` folder already exists 
 
 For production pinning, replace `master` in the URL with a release tag such as `v1.3.16`.
 
+Faster branch-testing options:
+- Skip build: set `WORK_TIMER_SKIP_BUILD=1`
+- Skip global relink: set `WORK_TIMER_SKIP_LINK=1`
+- Prevent updates on dirty repos by default; override with `WORK_TIMER_ALLOW_DIRTY=1`
+
 > **Windows users:** `npm link` may require adding npm's global bin to your PATH and setting PowerShell's execution policy. See the [Setup Guide](docs/setup.md#npm-link-not-working-on-windows) for details.
 
 ### 2. Set Up Database

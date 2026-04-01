@@ -108,11 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `work-timer uninstall` CLI command with confirmation prompt (`--yes` to skip)
-- Automatic update announcements in CLI usage: checks GitHub daily and, when newer builds exist, offers an interactive `Update now?` prompt
-
-### Changed
-
+- Installer scripts now block updates on dirty repositories by default and support `WORK_TIMER_SKIP_BUILD` / `WORK_TIMER_SKIP_LINK` for faster non-destructive branch testing
 - Refactored updater flow into shared logic so both `work-timer update` and the update prompt use the same install path and messaging
 
 ## [1.3.5] - 2026-03-31

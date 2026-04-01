@@ -4,6 +4,8 @@ set -euo pipefail
 REPO_URL="https://github.com/JoelBondoux/Work-Timer.git"
 REPO_DIR="${WORK_TIMER_REPO_DIR:-$HOME/Work-Timer}"
 REPO_REF="${WORK_TIMER_REPO_REF:-master}"
+SKIP_BUILD="${WORK_TIMER_SKIP_BUILD:-0}"
+ALLOW_DIRTY="${WORK_TIMER_ALLOW_DIRTY:-0}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -33,6 +35,12 @@ if [ -d "$REPO_DIR" ]; then
     exit 1
   fi
 
+  if [[ "$ALLOW_DIRTY" != "1" && -n "$(git status --porcelain)" ]]; then
+    echo "Refusing to update because the repository has uncommitted changes." >&2
+    echo "Commit/stash first, or rerun with WORK_TIMER_ALLOW_DIRTY=1." >&2
+    exit 1
+  fi
+
   echo "Existing repository detected. Updating..."
   git fetch origin "$REPO_REF" --tags
   git checkout "$REPO_REF"
@@ -51,8 +59,12 @@ else
   npm install
 fi
 
-echo "Building project..."
-npm run build
+if [ "$SKIP_BUILD" != "1" ]; then
+  echo "Building project..."
+  npm run build
+else
+  echo "Skipping build (requested)."
+fi
 
 if [ "${WORK_TIMER_SKIP_LINK:-0}" != "1" ]; then
   echo "Linking work-timer globally..."

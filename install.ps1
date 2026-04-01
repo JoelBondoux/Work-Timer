@@ -1,6 +1,8 @@
 param(
   [string]$RepoDir = $(if ($env:WORK_TIMER_REPO_DIR) { $env:WORK_TIMER_REPO_DIR } else { Join-Path $HOME "Work-Timer" }),
   [string]$RepoRef = $(if ($env:WORK_TIMER_REPO_REF) { $env:WORK_TIMER_REPO_REF } else { "master" }),
+  [switch]$SkipBuild = $($env:WORK_TIMER_SKIP_BUILD -eq "1"),
+  [switch]$AllowDirty = $($env:WORK_TIMER_ALLOW_DIRTY -eq "1"),
   [switch]$SkipLink = $($env:WORK_TIMER_SKIP_LINK -eq "1")
 )
 
@@ -32,6 +34,11 @@ if (Test-Path $RepoDir) {
     throw "Existing repository does not look like Work-Timer origin: $origin"
   }
 
+  $dirty = (git status --porcelain 2>$null)
+  if ($dirty -and -not $AllowDirty) {
+    throw "Refusing to update because the repository has uncommitted changes. Commit/stash first, or rerun with -AllowDirty (or WORK_TIMER_ALLOW_DIRTY=1)."
+  }
+
   Write-Host "Existing repository detected. Updating..."
   git fetch origin $RepoRef --tags
   git checkout $RepoRef
@@ -50,8 +57,12 @@ if (Test-Path "package-lock.json") {
   npm install
 }
 
-Write-Host "Building project..."
-npm run build
+if (-not $SkipBuild) {
+  Write-Host "Building project..."
+  npm run build
+} else {
+  Write-Host "Skipping build (requested)."
+}
 
 if (-not $SkipLink) {
   Write-Host "Linking work-timer globally..."
