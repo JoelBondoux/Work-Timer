@@ -84,6 +84,21 @@ meaningful_dirty_status() {
   git status --porcelain --untracked-files=no -- . ':(exclude)dist' 2>/dev/null || true
 }
 
+dist_dirty_status() {
+  git status --porcelain --untracked-files=no -- dist 2>/dev/null || true
+}
+
+resolve_dist_only_dirty_before_pull() {
+  if [ -n "$(meaningful_dirty_status)" ]; then
+    return
+  fi
+
+  if [ -n "$(dist_dirty_status)" ]; then
+    echo "Found generated dist/ changes from a prior local build. Resetting dist/ to avoid pull conflicts..."
+    git checkout -- dist
+  fi
+}
+
 install_dependencies() {
   if [ -f "package-lock.json" ]; then
     echo "Installing dependencies with npm ci..."
@@ -150,6 +165,10 @@ if [ "$EXISTING_INSTALL" = "1" ]; then
       exit 0
     fi
     echo "Proceeding with repair for version $current_version..."
+  fi
+
+  if [ "$ALLOW_DIRTY" != "1" ]; then
+    resolve_dist_only_dirty_before_pull
   fi
 
   git pull --ff-only origin "$REPO_REF"

@@ -153,6 +153,31 @@ function Get-MeaningfulDirtyStatus() {
   }
 }
 
+function Get-DistDirtyStatus() {
+  try {
+    $dirty = git status --porcelain --untracked-files=no -- dist 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      return $null
+    }
+    return $dirty
+  } catch {
+    return $null
+  }
+}
+
+function Resolve-DistOnlyDirtyBeforePull([string]$Path) {
+  $meaningfulDirty = Get-MeaningfulDirtyStatus
+  if ($meaningfulDirty) {
+    return
+  }
+
+  $distDirty = Get-DistDirtyStatus
+  if ($distDirty) {
+    Write-Host "Found generated dist/ changes from a prior local build. Resetting dist/ to avoid pull conflicts..."
+    Invoke-External -Command "git" -CommandArgs @("checkout", "--", "dist") -FailureMessage "failed to reset dist before pull"
+  }
+}
+
 Assert-Command git
 Assert-Command node
 Assert-Command npm
@@ -199,6 +224,10 @@ if ($existingInstall) {
       exit 0
     }
     Write-Host "Proceeding with repair for version $currentVersion..."
+  }
+
+  if (-not $AllowDirty) {
+    Resolve-DistOnlyDirtyBeforePull -Path $installDir
   }
 
   Invoke-External -Command "git" -CommandArgs @("pull", "--ff-only", "origin", $RepoRef) -FailureMessage "git pull failed"

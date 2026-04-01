@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.29] - 2026-04-01
+
+### Fixed
+
+- Fixed installer update flow where local generated `dist/` tracked changes could still cause `git pull --ff-only` to fail after passing dirty-state checks.
+- Installers now reset `dist/` automatically before pull when and only when there are no meaningful local edits outside `dist/`.
+
 ## [1.3.28] - 2026-04-01
 
 ### Fixed
