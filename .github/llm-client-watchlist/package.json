@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "license": "UNLICENSED",
   "dependencies": {
-    "@anthropic-ai/claude-code": "^2.1.89",
+    "@anthropic-ai/claude-code": "^2.1.114",
     "@google/gemini-cli": "^0.35.3",
     "@openai/codex": "^0.118.0",
     "ollama": "^0.6.3"
