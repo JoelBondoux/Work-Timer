@@ -7,7 +7,7 @@
   "dependencies": {
     "@anthropic-ai/claude-code": "^2.1.89",
     "@google/gemini-cli": "^0.35.3",
-    "@openai/codex": "^0.118.0",
+    "@openai/codex": "^0.121.0",
     "ollama": "^0.6.3"
   }
 }
