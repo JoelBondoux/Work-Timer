@@ -74,6 +74,35 @@ function Assert-Command([string]$Name) {
   }
 }
 
+function Ensure-GitCommand() {
+  if (Get-Command git -ErrorAction SilentlyContinue) {
+    return
+  }
+
+  if ($env:OS -eq "Windows_NT") {
+    $candidates = @(
+      "C:\Program Files\Git\cmd\git.exe",
+      "C:\Program Files\Git\bin\git.exe",
+      "C:\Program Files (x86)\Git\cmd\git.exe",
+      "C:\Program Files (x86)\Git\bin\git.exe"
+    )
+
+    foreach ($candidate in $candidates) {
+      if (Test-Path $candidate) {
+        Set-Alias -Name git -Value $candidate -Scope Script
+        $gitDir = Split-Path -Parent $candidate
+        if ($env:Path -notlike "*$gitDir*") {
+          $env:Path = "$gitDir;$env:Path"
+        }
+        Write-Host "Git found at $candidate"
+        return
+      }
+    }
+  }
+
+  throw "Required command not found on PATH: git. Install Git from https://git-scm.com/downloads and retry."
+}
+
 function Move-ToBackup([string]$Path) {
   $parent = Split-Path -Parent $Path
   $name = Split-Path -Leaf $Path
@@ -220,7 +249,7 @@ function Resolve-DistOnlyDirtyBeforePull([string]$Path) {
   }
 }
 
-Assert-Command git
+Ensure-GitCommand
 Assert-Command node
 Assert-Command npm
 
