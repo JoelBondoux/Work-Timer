@@ -118,7 +118,11 @@ function Get-PackageVersionFromGitRef([string]$GitRef) {
 }
 
 function Confirm-RepairOrCancel([string]$Version) {
-  $mode = ($env:WORK_TIMER_REPAIR_MODE ?? '').Trim().ToLowerInvariant()
+  $mode = [string]$env:WORK_TIMER_REPAIR_MODE
+  if (-not $mode) {
+    $mode = ''
+  }
+  $mode = $mode.Trim().ToLowerInvariant()
   if ($mode -eq 'repair') {
     Write-Host "Same version detected. Proceeding with repair mode (WORK_TIMER_REPAIR_MODE=repair)."
     return $true
