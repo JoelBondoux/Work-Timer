@@ -40,8 +40,8 @@
     "brace-expansion@^2.0.1": "2.0.3"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.41",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.2.6"
   }
 }
