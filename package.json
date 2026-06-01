@@ -28,11 +28,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@libsql/client": "^0.17.2",
+    "@libsql/client": "^0.17.3",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "commander": "^14.0.0",
-    "write-excel-file": "^3.0.8",
-    "zod": "^4.3.6"
+    "commander": "^15.0.0",
+    "write-excel-file": "^4.0.7",
+    "zod": "^4.4.3"
   },
   "overrides": {
     "path-to-regexp": "8.4.0",
