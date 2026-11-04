@@ -32,7 +32,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^14.0.0",
     "write-excel-file": "^3.0.8",
-    "zod": "^4.3.6"
+    "zod": "^4.6.7"
   },
   "overrides": {
     "path-to-regexp": "8.4.0",
